@@ -2,7 +2,7 @@
 
 Un dashboard moderno construido con Vue 3, TypeScript y Tailwind CSS para la gestión de proyectos y métricas.
 
-## 🚀 Instalación
+## Instalación
 
 ### Prerrequisitos
 
