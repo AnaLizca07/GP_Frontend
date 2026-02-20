@@ -1,79 +1,67 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useStorage } from '@vueuse/core'
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useAuth } from '@/composables/useAuth'
 
 const toast = useToast()
 const route = useRoute()
+const router = useRouter()
+const { logout } = useAuth()
+
+// Detectar si estamos en páginas de autenticación
+const isAuthPage = computed(() => {
+  return route.path.startsWith('/login') ||
+         route.path.startsWith('/register') ||
+         route.path.startsWith('/forgot-password') ||
+         route.path.startsWith('/404') ||
+         route.path.startsWith('/unauthorized')
+})
 
 const open = ref(false)
 
+const handleLogout = async () => {
+  await logout()
+  await router.push('/login')
+}
+
 const links = [[{
-  label: 'Home',
-  icon: 'i-lucide-house',
+  label: 'Dashboard',
+  icon: 'i-lucide-layout-dashboard',
   to: '/',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Inbox',
-  icon: 'i-lucide-inbox',
-  to: '/inbox',
-  badge: '4',
+  label: 'Proyectos',
+  icon: 'i-lucide-folder-open',
+  to: '/proyectos',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Customers',
+  label: 'Tareas',
+  icon: 'i-lucide-check-square',
+  to: '/tareas',
+  onSelect: () => {
+    open.value = false
+  }
+}, {
+  label: 'Equipo',
   icon: 'i-lucide-users',
-  to: '/customers',
+  to: '/equipo',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Settings',
-  to: '/settings',
-  icon: 'i-lucide-settings',
-  defaultOpen: true,
-  type: 'trigger',
-  children: [{
-    label: 'General',
-    to: '/settings',
-    exact: true,
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Members',
-    to: '/settings/members',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Notifications',
-    to: '/settings/notifications',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: 'Security',
-    to: '/settings/security',
-    onSelect: () => {
-      open.value = false
-    }
-  }]
-}], [{
-  label: 'Feedback',
-  icon: 'i-lucide-message-circle',
-  to: 'https://github.com/nuxt-ui-templates/dashboard-vue',
-  target: '_blank'
-}, {
-  label: 'Help & Support',
-  icon: 'i-lucide-info',
-  to: 'https://github.com/nuxt/ui',
-  target: '_blank'
-}]] satisfies NavigationMenuItem[][]
+  label: 'Finanzas',
+  icon: 'i-lucide-wallet',
+  to: '/finanzas',
+  onSelect: () => {
+    open.value = false
+  }
+}], []] satisfies NavigationMenuItem[][]
 
 const groups = computed(() => [{
   id: 'links',
@@ -116,50 +104,63 @@ if (cookie.value !== 'accepted') {
 <template>
   <Suspense>
     <UApp>
-      <UDashboardGroup unit="rem" storage="local">
-        <UDashboardSidebar
-          id="default"
-          v-model:open="open"
-          collapsible
-          resizable
-          class="bg-elevated/25"
-          :ui="{ footer: 'lg:border-t lg:border-default' }"
-        >
-          <template #header="{ collapsed }">
-            <TeamsMenu :collapsed="collapsed" />
-          </template>
-
-          <template #default="{ collapsed }">
-            <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
-
-            <UNavigationMenu
-              :collapsed="collapsed"
-              :items="links[0]"
-              orientation="vertical"
-              tooltip
-              popover
-            />
-
-            <UNavigationMenu
-              :collapsed="collapsed"
-              :items="links[1]"
-              orientation="vertical"
-              tooltip
-              class="mt-auto"
-            />
-          </template>
-
-          <template #footer="{ collapsed }">
-            <UserMenu :collapsed="collapsed" />
-          </template>
-        </UDashboardSidebar>
-
-        <UDashboardSearch :groups="groups" />
-
+      <!-- Layout para páginas de autenticación -->
+      <template v-if="isAuthPage">
         <RouterView />
+      </template>
 
-        <NotificationsSlideover />
-      </UDashboardGroup>
+      <!-- Layout para dashboard -->
+      <template v-else>
+        <UDashboardGroup unit="rem" storage="local">
+          <UDashboardSidebar
+            id="default"
+            v-model:open="open"
+            collapsible
+            resizable
+            class="bg-elevated/25"
+            :ui="{ footer: 'lg:border-t lg:border-default' }"
+          >
+            <template #header="{ collapsed }">
+              <TeamsMenu :collapsed="collapsed" />
+            </template>
+
+            <template #default="{ collapsed }">
+              <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
+
+              <UNavigationMenu
+                :collapsed="collapsed"
+                :items="links[0]"
+                orientation="vertical"
+                tooltip
+                popover
+              />
+
+              <div class="mt-auto">
+                <UButton
+                  :label="collapsed ? undefined : 'Cerrar sesión'"
+                  icon="i-lucide-log-out"
+                  color="neutral"
+                  variant="ghost"
+                  block
+                  :square="collapsed"
+                  class="mb-2"
+                  @click="handleLogout"
+                />
+              </div>
+            </template>
+
+            <template #footer="{ collapsed }">
+              <UserMenu :collapsed="collapsed" />
+            </template>
+          </UDashboardSidebar>
+
+          <UDashboardSearch :groups="groups" />
+
+          <RouterView />
+
+          <NotificationsSlideover />
+        </UDashboardGroup>
+      </template>
     </UApp>
   </Suspense>
 </template>

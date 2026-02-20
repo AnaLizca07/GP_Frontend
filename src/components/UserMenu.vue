@@ -1,30 +1,41 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
+import { useAuth } from '@/composables/useAuth'
 
 defineProps<{
   collapsed?: boolean
 }>()
 
+const router = useRouter()
 const colorMode = useColorMode()
 const appConfig = useAppConfig()
+const { user: authUser } = useAuth()
 
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const user = ref({
-  name: 'Benjamin Canac',
+// Generar avatar basado en el email del usuario
+const generateAvatarUrl = (email: string) => {
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(email)}&backgroundColor=3b82f6&color=ffffff`
+}
+
+const user = computed(() => ({
+  name: authUser.value?.email || 'Usuario',
   avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac'
+    src: authUser.value ? generateAvatarUrl(authUser.value.email) : '',
+    alt: authUser.value?.email || 'Usuario'
   }
-})
+}))
+
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
   label: user.value.name,
-  avatar: user.value.avatar
+  avatar: user.value.avatar,
+  subtitle: authUser.value?.role ? `Rol: ${authUser.value.role}` : undefined
 }], [{
   label: 'Profile',
   icon: 'i-lucide-user'
@@ -129,9 +140,6 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   icon: 'simple-icons:github',
   to: 'https://github.com/nuxt-ui-templates/dashboard-vue',
   target: '_blank'
-}], [{
-  label: 'Log out',
-  icon: 'i-lucide-log-out'
 }]]))
 </script>
 
