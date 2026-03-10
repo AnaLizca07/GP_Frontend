@@ -35,6 +35,36 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, allowedRoles: ['manager', 'employee', 'sponsor'] }
   },
 
+  // PMIS - Rutas específicas del sistema de gestión de proyectos
+  {
+    path: '/proyectos',
+    name: 'proyectos',
+    component: () => import('@/pages/proyectos.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager'] }
+  },
+  {
+    path: '/tareas',
+    name: 'tareas',
+    component: () => import('@/pages/tareas.vue'),
+    beforeEnter: authGuard,
+    meta: { requiresAuth: true, allowedRoles: ['manager', 'employee'] }
+  },
+  {
+    path: '/equipo',
+    name: 'equipo',
+    component: () => import('@/pages/equipo.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager'] }
+  },
+  {
+    path: '/finanzas',
+    name: 'finanzas',
+    component: () => import('@/pages/finanzas.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager'] }
+  },
+
   // Rutas protegidas - Inbox (todos los roles)
   {
     path: '/inbox',
