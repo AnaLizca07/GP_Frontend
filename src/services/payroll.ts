@@ -275,5 +275,18 @@ export const payrollService = {
   }> {
     const { data } = await api.put('/api/payroll/minimum-wage', params)
     return data
+  },
+
+  async getEmployeeReceipts(employeeId: number): Promise<Array<{
+    id: number
+    period_start: string
+    period_end: string
+    net_pay: number
+    receipt_url: string | null
+    paid_at: string | null
+    status: string
+  }>> {
+    const { data } = await api.get(`/api/payroll/employee/${employeeId}/receipts`)
+    return data
   }
 }

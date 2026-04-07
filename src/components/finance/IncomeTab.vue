@@ -4,11 +4,22 @@
     <div class="flex flex-col lg:flex-row gap-6">
       <!-- KPI Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
-        <UCard v-for="kpi in ingresosKpis" :key="kpi.titulo" class="p-6">
+        <UCard class="p-6">
           <div>
-            <h3 class="text-sm font-medium text-muted-foreground mb-2">{{ kpi.titulo }}</h3>
-            <p class="text-3xl font-bold text-success mb-1">{{ kpi.valor }}</p>
-            <p class="text-sm text-muted-foreground">{{ kpi.subtexto }}</p>
+            <h3 class="text-sm font-medium text-muted-foreground mb-2">Total ingresos</h3>
+            <p class="text-3xl font-bold text-success mb-1">
+              {{ loading ? '...' : formatCOP(totalIncome) }}
+            </p>
+            <p class="text-sm text-muted-foreground">Suma de todos los ingresos</p>
+          </div>
+        </UCard>
+        <UCard class="p-6">
+          <div>
+            <h3 class="text-sm font-medium text-muted-foreground mb-2">Transacciones</h3>
+            <p class="text-3xl font-bold text-blue-500 mb-1">
+              {{ loading ? '...' : transactions.length }}
+            </p>
+            <p class="text-sm text-muted-foreground">Registros de ingresos</p>
           </div>
         </UCard>
       </div>
@@ -26,65 +37,10 @@
       </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Income by Month Chart -->
-      <UCard class="lg:col-span-2">
-        <template #header>
-          <h3 class="text-lg font-semibold">Ingresos por mes</h3>
-        </template>
-
-        <div class="h-64 flex items-center justify-center">
-          <div class="text-center">
-            <UIcon name="i-lucide-bar-chart-3" class="w-12 h-12 text-green-500 mb-2" />
-            <p class="text-sm text-muted-foreground">Gráfico de barras de ingresos</p>
-            <p class="text-xs text-muted-foreground mt-1">Datos de Enero a Junio 2026</p>
-          </div>
-        </div>
-
-        <template #footer>
-          <div class="text-xs text-muted-foreground">
-            Promedio mensual: ${{ Math.round(ingresosChartData.reduce((sum, item) => sum + item.ingresos, 0) / ingresosChartData.length).toLocaleString() }}
-          </div>
-        </template>
-      </UCard>
-
-      <!-- Budget Utilization Chart -->
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold">Utilización del presupuesto</h3>
-        </template>
-
-        <div class="h-64 flex items-center justify-center">
-          <div class="relative w-32 h-32">
-            <svg class="transform -rotate-90 w-32 h-32">
-              <circle
-                cx="64"
-                cy="64"
-                r="56"
-                stroke="currentColor"
-                stroke-width="8"
-                fill="transparent"
-                class="text-muted"
-              />
-              <circle
-                cx="64"
-                cy="64"
-                r="56"
-                stroke="currentColor"
-                stroke-width="8"
-                fill="transparent"
-                stroke-dasharray="351.86"
-                :stroke-dashoffset="351.86 - (351.86 * budgetUtilization) / 100"
-                class="text-blue-500"
-              />
-            </svg>
-            <div class="absolute inset-0 flex items-center justify-center">
-              <span class="text-2xl font-bold">{{ budgetUtilization }}%</span>
-            </div>
-          </div>
-        </div>
-      </UCard>
+    <!-- Error state -->
+    <div v-if="error" class="text-center py-4">
+      <p class="text-red-500 mb-2">{{ error }}</p>
+      <UButton label="Reintentar" size="sm" @click="fetchTransactions" />
     </div>
 
     <!-- Income List Table -->
@@ -92,10 +48,6 @@
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">Listado de ingresos</h3>
-          <div class="flex gap-2">
-            <UButton icon="i-lucide-filter" variant="outline" size="sm" />
-            <UButton icon="i-lucide-download" variant="outline" size="sm" />
-          </div>
         </div>
       </template>
 
@@ -106,30 +58,42 @@
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Fecha</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Concepto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Categoría</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Origen</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Proyecto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Monto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
           <tbody class="bg-background divide-y divide-border">
-            <tr v-for="item in incomeTableData" :key="item.id" class="hover:bg-muted/50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatDate(item.date) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">{{ item.concept }}</td>
+            <tr v-if="loading">
+              <td colspan="5" class="px-6 py-8 text-center text-muted-foreground">
+                <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
+                Cargando ingresos...
+              </td>
+            </tr>
+            <tr v-else-if="transactions.length === 0">
+              <td colspan="5" class="px-6 py-8 text-center text-muted-foreground">
+                No hay ingresos registrados
+              </td>
+            </tr>
+            <tr v-for="item in transactions" :key="item.id" class="hover:bg-muted/50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatDate(item.transaction_date) }}</td>
+              <td class="px-6 py-4 text-sm font-medium">{{ item.description }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                  {{ item.category }}
+                  {{ item.category || '—' }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">{{ item.origin }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">{{ item.project || '-' }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${{ item.amount.toLocaleString() }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                {{ formatCOP(item.amount) }}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <div class="flex gap-2">
-                  <UButton icon="i-lucide-eye" variant="ghost" size="sm" />
-                  <UButton icon="i-lucide-edit" variant="ghost" size="sm" />
-                  <UButton icon="i-lucide-trash-2" variant="ghost" size="sm" color="red" />
-                </div>
+                <UButton
+                  icon="i-lucide-trash-2"
+                  variant="ghost"
+                  size="sm"
+                  color="red"
+                  :loading="deletingId === item.id"
+                  @click="deleteTransaction(item.id)"
+                />
               </td>
             </tr>
           </tbody>
@@ -137,15 +101,8 @@
       </div>
 
       <template #footer>
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-muted-foreground">
-            Mostrando 1-{{ incomeTableData.length }} de {{ incomeTableData.length }} registros
-          </div>
-          <div class="flex items-center gap-2">
-            <UButton icon="i-lucide-chevron-left" variant="outline" size="sm" disabled />
-            <UButton variant="outline" size="sm">1</UButton>
-            <UButton icon="i-lucide-chevron-right" variant="outline" size="sm" disabled />
-          </div>
+        <div class="text-sm text-muted-foreground">
+          {{ transactions.length }} registro(s)
         </div>
       </template>
     </UCard>
@@ -203,9 +160,9 @@
                   <input
                     v-model.number="incomeForm.amount"
                     type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
+                    step="1"
+                    min="1"
+                    placeholder="0"
                     :disabled="submittingIncome"
                     class="w-full pl-8 pr-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
                   />
@@ -223,62 +180,44 @@
               </div>
             </div>
 
-            <!-- Description Field -->
+            <!-- Category Field (RF19) -->
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">Descripción (opcional)</label>
-              <textarea
-                v-model="incomeForm.description"
-                rows="3"
-                placeholder="Descripción adicional del ingreso"
-                :disabled="submittingIncome"
-                class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 resize-none"
-              ></textarea>
-            </div>
-
-            <!-- Category Field -->
-            <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">Categoría</label>
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-slate-300">Categoría *</label>
+                <button
+                  type="button"
+                  class="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
+                  @click="showNewCategoryInput = !showNewCategoryInput"
+                >
+                  <UIcon name="i-lucide-plus" class="w-3 h-3" />
+                  Nueva categoría
+                </button>
+              </div>
+              <!-- New category inline input -->
+              <div v-if="showNewCategoryInput" class="flex gap-2 mb-2">
+                <input
+                  v-model="newCategoryInput"
+                  type="text"
+                  placeholder="Nombre de la nueva categoría"
+                  class="flex-1 px-3 py-2 bg-slate-700 border border-slate-500 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  @keyup.enter="addNewCategory"
+                />
+                <button
+                  type="button"
+                  @click="addNewCategory"
+                  class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium"
+                >Agregar</button>
+              </div>
               <select
-                v-model="incomeForm.category_id"
+                v-model="incomeForm.category"
                 :disabled="submittingIncome"
                 class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
               >
                 <option value="">Seleccionar categoría</option>
-                <option
-                  v-for="category in availableCategories"
-                  :key="category.value"
-                  :value="category.value"
-                  class="bg-slate-800 text-white"
-                >
-                  {{ category.label }}
+                <option v-for="cat in availableCategories" :key="cat" :value="cat" class="bg-slate-800 text-white">
+                  {{ cat }}
                 </option>
               </select>
-            </div>
-
-            <!-- New Category Field -->
-            <div class="flex items-end gap-3">
-              <div class="flex-1">
-                <label class="block text-sm font-medium text-slate-300 mb-2">Nueva categoría (opcional)</label>
-                <input
-                  v-model="incomeForm.new_category"
-                  type="text"
-                  placeholder="Nombre de nueva categoría"
-                  :disabled="submittingIncome"
-                  class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
-                />
-              </div>
-              <button
-                type="button"
-                :disabled="!incomeForm.new_category.trim() || submittingIncome"
-                @click="() => {
-                  if (incomeForm.new_category.trim()) {
-                    console.log('Creating category:', incomeForm.new_category.trim())
-                  }
-                }"
-                class="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-400 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                Agregar
-              </button>
             </div>
 
             <!-- Origin Field -->
@@ -292,50 +231,30 @@
                 class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
               />
             </div>
-
-            <!-- Project Field -->
-            <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">Proyecto (opcional)</label>
-              <input
-                v-model="incomeForm.project"
-                type="text"
-                placeholder="Ej: Portal de Clientes"
-                :disabled="submittingIncome"
-                class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
-              />
-            </div>
           </form>
         </div>
 
         <!-- Modal Footer -->
         <div class="px-6 py-4 border-t border-slate-700 bg-slate-800/50">
-          <div class="flex items-center justify-between">
-            <div class="text-sm text-slate-400">
-              <span v-if="incomeForm.amount">
-                Complete los campos obligatorios
-              </span>
-              <span v-else>Complete los campos obligatorios</span>
-            </div>
-            <div class="flex gap-3">
-              <button
-                type="button"
-                @click="closeIncomeModal"
-                :disabled="submittingIncome"
-                class="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                @click="submitIncome"
-                :disabled="submittingIncome || !incomeForm.concept.trim() || !incomeForm.amount || !incomeForm.date || !incomeForm.origin.trim()"
-                class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 flex items-center gap-2"
-              >
-                <UIcon v-if="submittingIncome" name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
-                <UIcon v-else name="i-lucide-save" class="w-4 h-4" />
-                {{ submittingIncome ? 'Guardando...' : 'Guardar ingreso' }}
-              </button>
-            </div>
+          <div class="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              @click="closeIncomeModal"
+              :disabled="submittingIncome"
+              class="px-4 py-2 text-slate-300 hover:text-white transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              @click="submitIncome"
+              :disabled="submittingIncome || !isFormValid"
+              class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:text-slate-400 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 flex items-center gap-2"
+            >
+              <UIcon v-if="submittingIncome" name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
+              <UIcon v-else name="i-lucide-save" class="w-4 h-4" />
+              {{ submittingIncome ? 'Guardando...' : 'Guardar ingreso' }}
+            </button>
           </div>
         </div>
       </div>
@@ -344,96 +263,109 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import financeService, { type Transaction } from '@/services/finance'
+import { formatCOP } from '@/utils'
 
-// KPIs for Ingresos tab
-const ingresosKpis = ref([
-  {
-    titulo: 'Total ingresos',
-    valor: '$5.500.000',
-    subtexto: 'Mes actual (demo)',
-    color: 'green'
-  },
-  {
-    titulo: 'Transacciones',
-    valor: '3',
-    subtexto: 'Registros de ingresos',
-    color: 'blue'
+// ─── Estado ────────────────────────────────────────────────────────────────
+const transactions = ref<Transaction[]>([])
+const loading = ref(false)
+const error = ref<string | null>(null)
+const deletingId = ref<number | null>(null)
+
+// ─── KPIs calculados ───────────────────────────────────────────────────────
+const totalIncome = computed(() =>
+  transactions.value.reduce((sum, t) => sum + t.amount, 0)
+)
+
+// ─── Carga ─────────────────────────────────────────────────────────────────
+const fetchTransactions = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    transactions.value = await financeService.getTransactions('income')
+  } catch (e: any) {
+    error.value = 'Error al cargar ingresos'
+    console.error(e)
+  } finally {
+    loading.value = false
   }
-])
+}
 
-// Chart data for income by month
-const ingresosChartData = ref([
-  { mes: 'Ene', ingresos: 300000 },
-  { mes: 'Feb', ingresos: 600000 },
-  { mes: 'Mar', ingresos: 500000 },
-  { mes: 'Abr', ingresos: 700000 },
-  { mes: 'May', ingresos: 450000 },
-  { mes: 'Jun', ingresos: 800000 }
-])
+onMounted(fetchTransactions)
 
-// Budget utilization percentage
-const budgetUtilization = ref(65)
+// ─── Formateo ──────────────────────────────────────────────────────────────
 
-// Mock data for demo
-const incomeTableData = ref([
-  {
-    id: 1,
-    concept: 'Pago Cliente ABC',
-    amount: 2500000,
-    origin: 'Cliente ABC Corp',
-    date: '2026-02-01',
-    project: 'Portal Web',
-    category: 'Servicios',
-    description: 'Pago por desarrollo de portal web'
-  },
-  {
-    id: 2,
-    concept: 'Consultoría TI',
-    amount: 1800000,
-    origin: 'Empresa XYZ',
-    date: '2026-02-15',
-    project: 'Sistema ERP',
-    category: 'Consultoría',
-    description: 'Consultoría en implementación ERP'
-  },
-  {
-    id: 3,
-    concept: 'Desarrollo App',
-    amount: 3200000,
-    origin: 'Startup DEF',
-    date: '2026-02-20',
-    project: 'App Móvil',
-    category: 'Productos',
-    description: 'Desarrollo de aplicación móvil'
+  
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '—'
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CO')
+}
+
+// ─── Eliminar ──────────────────────────────────────────────────────────────
+const deleteTransaction = async (id: number) => {
+  if (!confirm('¿Eliminar este ingreso?')) return
+  deletingId.value = id
+  try {
+    await financeService.deleteTransaction(id)
+    transactions.value = transactions.value.filter(t => t.id !== id)
+  } catch (e) {
+    console.error('Error eliminando ingreso:', e)
+    alert('Error al eliminar el ingreso')
+  } finally {
+    deletingId.value = null
   }
-])
+}
 
-// Income modal state
+// ─── Modal ─────────────────────────────────────────────────────────────────
 const incomeModalOpen = ref(false)
 const submittingIncome = ref(false)
+
+// RF19: categorías dinámicas, persistidas en localStorage
+const INCOME_CATS_KEY = 'finance_income_categories'
+const defaultIncomeCategories = ['Servicios', 'Productos', 'Consultoría', 'Contratos', 'Otros']
+const availableCategories = ref<string[]>((() => {
+  try {
+    const stored = localStorage.getItem(INCOME_CATS_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored) as string[]
+      return [...new Set([...defaultIncomeCategories, ...parsed])]
+    }
+  } catch {}
+  return [...defaultIncomeCategories]
+})())
+
+const newCategoryInput = ref('')
+const showNewCategoryInput = ref(false)
+
+function addNewCategory() {
+  const name = newCategoryInput.value.trim()
+  if (!name || availableCategories.value.includes(name)) return
+  availableCategories.value.push(name)
+  // persist custom categories (only the extra ones)
+  const extras = availableCategories.value.filter(c => !defaultIncomeCategories.includes(c))
+  localStorage.setItem(INCOME_CATS_KEY, JSON.stringify(extras))
+  incomeForm.value.category = name
+  newCategoryInput.value = ''
+  showNewCategoryInput.value = false
+}
 
 const incomeForm = ref({
   concept: '',
   amount: null as number | null,
   date: '',
-  description: '',
-  category_id: '',
-  new_category: '',
+  category: '',
   origin: '',
-  project: ''
 })
 
-const availableCategories = ref([
-  { value: 'servicios', label: 'Servicios' },
-  { value: 'productos', label: 'Productos' },
-  { value: 'consultoria', label: 'Consultoría' },
-  { value: 'otros', label: 'Otros' }
-])
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString('es-CO')
-}
+const isFormValid = computed(() =>
+  !!incomeForm.value.concept.trim() &&
+  !!incomeForm.value.amount && incomeForm.value.amount > 0 &&
+  !!incomeForm.value.date &&
+  !!incomeForm.value.category &&
+  !!incomeForm.value.origin.trim()
+)
 
 const openIncomeModal = () => {
   incomeModalOpen.value = true
@@ -441,29 +373,29 @@ const openIncomeModal = () => {
 
 const closeIncomeModal = () => {
   incomeModalOpen.value = false
-  incomeForm.value = {
-    concept: '',
-    amount: null,
-    date: '',
-    description: '',
-    category_id: '',
-    new_category: '',
-    origin: '',
-    project: ''
-  }
+  incomeForm.value = { concept: '', amount: null, date: '', category: '', origin: '' }
 }
 
 const submitIncome = async () => {
-  if (!incomeForm.value.concept.trim() || !incomeForm.value.amount || !incomeForm.value.date || !incomeForm.value.origin.trim()) return
-
+  if (!isFormValid.value) return
   submittingIncome.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('Submitting income:', incomeForm.value)
+    const description = incomeForm.value.origin.trim()
+      ? `${incomeForm.value.concept} — Origen: ${incomeForm.value.origin}`
+      : incomeForm.value.concept
+
+    const created = await financeService.createTransaction({
+      type: 'income',
+      amount: incomeForm.value.amount!,
+      category: incomeForm.value.category,
+      description,
+      transaction_date: incomeForm.value.date,
+    })
+    transactions.value.unshift(created)
     closeIncomeModal()
-  } catch (error) {
-    console.error('Error creating income:', error)
+  } catch (e) {
+    console.error('Error guardando ingreso:', e)
+    alert('Error al guardar el ingreso')
   } finally {
     submittingIncome.value = false
   }

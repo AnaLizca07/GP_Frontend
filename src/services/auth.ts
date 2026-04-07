@@ -32,6 +32,11 @@ export const authService = {
     return data
   },
 
+  async changePassword(newPassword: string): Promise<{ message: string; must_change_password: boolean }> {
+    const { data } = await api.post('/api/auth/change-password', { password: newPassword })
+    return data
+  },
+
   async validateRole(role: 'manager' | 'employee' | 'sponsor'): Promise<{
     message: string
     role: string

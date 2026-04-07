@@ -1,7 +1,8 @@
-export function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
-
-export function randomFrom<T>(array: T[]): T {
-  return array[Math.floor(Math.random() * array.length)]
+/** Formatea un número como peso colombiano: $1.300.000 */
+export function formatCOP(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }

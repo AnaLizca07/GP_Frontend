@@ -4,6 +4,7 @@ export interface User {
   role: 'manager' | 'employee' | 'sponsor'
   created_at: string
   updated_at: string
+  must_change_password?: boolean
 }
 
 export interface AuthResponse {

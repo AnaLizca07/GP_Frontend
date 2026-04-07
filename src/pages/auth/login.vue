@@ -1,22 +1,46 @@
 <template>
-  <div class="min-h-screen bg-zinc-50 dark:bg-zinc-900 flex flex-col items-center justify-center p-4">
-    <AuthHeader />
+  <div class="min-h-screen flex">
 
-    <AuthCard>
-      <AuthToggle v-model:active-tab="activeTab" />
+    <!-- Panel izquierdo: marca -->
+    <div class="hidden lg:flex lg:w-2/5 flex-col items-center justify-center p-12 text-white" style="background-color: #003C68;">
+      <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-8" style="background-color: rgba(255,255,255,0.15);">
+        <span class="text-4xl font-bold">PG</span>
+      </div>
+      <h1 class="text-4xl font-bold mb-3 tracking-tight">ProjeGest</h1>
+      <p class="text-white/70 text-center text-base mb-14">Plataforma de Gestión de Proyectos</p>
 
-      <div v-show="activeTab === 'login'">
+      <div class="space-y-4 w-full max-w-xs">
+        <div v-for="feature in features" :key="feature" class="flex items-center gap-3">
+          <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(255,255,255,0.2);">
+            <UIcon name="i-lucide-check" class="w-3 h-3 text-white" />
+          </div>
+          <span class="text-sm text-white/80">{{ feature }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel derecho: formulario -->
+    <div class="flex-1 flex items-center justify-center p-8 bg-white dark:bg-zinc-900">
+      <div class="w-full max-w-sm">
+
+        <!-- Logo móvil -->
+        <div class="flex lg:hidden items-center gap-3 mb-10">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold" style="background-color: #003C68;">PG</div>
+          <span class="text-xl font-bold">ProjeGest</span>
+        </div>
+
+        <div class="mb-8">
+          <h2 class="text-2xl font-bold text-foreground mb-1">Bienvenido de vuelta</h2>
+          <p class="text-sm text-muted-foreground">Ingresa tus credenciales para continuar</p>
+        </div>
+
         <UForm
           :schema="loginSchema"
           :state="form"
           @submit.prevent="handleSubmit(form)"
-          class="space-y-4"
+          class="space-y-5"
         >
-          <UFormField
-            name="email"
-            label="Correo Electrónico"
-            required
-          >
+          <UFormField name="email" label="Correo electrónico" required>
             <UInput
               v-model="form.email"
               type="email"
@@ -24,15 +48,11 @@
               :disabled="isLoading"
               autocomplete="email"
               size="lg"
-              class="h-12"
+              icon="i-lucide-mail"
             />
           </UFormField>
 
-          <UFormField
-            name="password"
-            label="Contraseña"
-            required
-          >
+          <UFormField name="password" label="Contraseña" required>
             <UInput
               v-model="form.password"
               type="password"
@@ -40,16 +60,27 @@
               :disabled="isLoading"
               autocomplete="current-password"
               size="lg"
-              class="h-12"
+              icon="i-lucide-lock"
             />
           </UFormField>
+
+          <div class="flex justify-end -mt-2">
+            <UButton
+              to="/forgot-password"
+              variant="link"
+              size="xs"
+              :disabled="isLoading"
+              class="p-0 text-muted-foreground"
+            >
+              ¿Olvidaste tu contraseña?
+            </UButton>
+          </div>
 
           <UAlert
             v-if="error"
             color="error"
             variant="subtle"
             :title="error"
-            class="mt-4"
           />
 
           <UButton
@@ -58,33 +89,22 @@
             size="lg"
             :loading="isLoading"
             :disabled="isLoading"
-            class="mt-6 h-12"
             color="primary"
+            class="mt-2"
           >
             Iniciar Sesión
           </UButton>
-
-          <div class="text-center mt-4">
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">
-              Tip demo: usa correos que contengan "gerente" o "cliente"<br>
-              Ej: <span class="font-mono text-zinc-700 dark:text-zinc-300">gerente@demo.com / cliente@demo.com</span>
-            </p>
-          </div>
-
-          <div class="text-center mt-6">
-            <UButton
-              to="/forgot-password"
-              variant="link"
-              size="sm"
-              :disabled="isLoading"
-              class="text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-            >
-              ¿Olvidaste tu contraseña?
-            </UButton>
-          </div>
         </UForm>
+
+        <div class="mt-8 pt-6 border-t border-default text-center">
+          <span class="text-sm text-muted-foreground">¿No tienes cuenta? </span>
+          <UButton to="/register" variant="link" size="sm" class="p-0 font-medium">
+            Regístrate
+          </UButton>
+        </div>
+
       </div>
-    </AuthCard>
+    </div>
   </div>
 </template>
 
@@ -94,14 +114,16 @@ import { useRouter } from 'vue-router'
 import { z } from 'zod'
 import { useAuth } from '@/composables/useAuth'
 import type { LoginCredentials } from '@/types/auth'
-import AuthHeader from '@/components/auth/AuthHeader.vue'
-import AuthCard from '@/components/auth/AuthCard.vue'
-import AuthToggle from '@/components/auth/AuthToggle.vue'
 
 const router = useRouter()
 const { login, isLoading, error, clearError } = useAuth()
 
-const activeTab = ref<'login' | 'register'>('login')
+const features = [
+  'Gestión de proyectos en tiempo real',
+  'Control de equipos y tareas',
+  'Nómina y finanzas integradas',
+  'Reportes y seguimiento de OKRs',
+]
 
 const loginSchema = z.object({
   email: z.string().email('Ingresa un email válido'),
@@ -115,7 +137,6 @@ const form = reactive<LoginCredentials>({
 
 const handleSubmit = async (data: LoginCredentials) => {
   clearError()
-
   try {
     await login(data)
     await router.push('/')
