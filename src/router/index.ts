@@ -25,14 +25,76 @@ const routes: RouteRecordRaw[] = [
     beforeEnter: guestGuard,
     meta: { requiresAuth: false }
   },
+  {
+    path: '/change-password',
+    name: 'change-password',
+    component: () => import('@/pages/auth/change-password.vue'),
+    beforeEnter: authGuard,
+    meta: { requiresAuth: true }
+  },
 
-  // Rutas protegidas - Dashboard principal
+  // Rutas protegidas - Dashboard principal (solo manager; otros roles se redirigen en index.vue)
   {
     path: '/',
     name: 'dashboard',
     component: () => import('@/pages/index.vue'),
     beforeEnter: authGuard,
     meta: { requiresAuth: true, allowedRoles: ['manager', 'employee', 'sponsor'] }
+  },
+
+  // Dashboard específico para empleados
+  {
+    path: '/empleado',
+    name: 'empleado',
+    component: () => import('@/pages/empleado.vue'),
+    beforeEnter: [authGuard, roleGuard(['employee'])],
+    meta: { requiresAuth: true, allowedRoles: ['employee'] }
+  },
+
+  // Dashboard de patrocinador/cliente
+  {
+    path: '/sponsor',
+    name: 'sponsor',
+    component: () => import('@/pages/sponsor.vue'),
+    beforeEnter: [authGuard, roleGuard(['sponsor'])],
+    meta: { requiresAuth: true, allowedRoles: ['sponsor'] }
+  },
+
+  // PMIS - Rutas específicas del sistema de gestión de proyectos
+  {
+    path: '/proyectos',
+    name: 'proyectos',
+    component: () => import('@/pages/proyectos.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager'] }
+  },
+  {
+    path: '/proyectos/:id',
+    name: 'proyecto-dashboard',
+    component: () => import('@/pages/proyecto-dashboard.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager'] }
+  },
+  {
+    path: '/tareas',
+    name: 'tareas',
+    component: () => import('@/pages/tareas.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager', 'employee'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager', 'employee'] }
+  },
+  {
+    path: '/equipo',
+    name: 'equipo',
+    component: () => import('@/pages/equipo.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager', 'employee'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager', 'employee'] }
+  },
+  {
+    path: '/finanzas',
+    name: 'finanzas',
+    component: () => import('@/pages/finanzas.vue'),
+    beforeEnter: [authGuard, roleGuard(['manager'])],
+    meta: { requiresAuth: true, allowedRoles: ['manager'] }
   },
 
   // Rutas protegidas - Inbox (todos los roles)
