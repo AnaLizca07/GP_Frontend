@@ -1,0 +1,37 @@
+# Dependencias — se reinstalan dentro del contenedor
+node_modules/
+
+# Artefactos de build previos
+dist/
+
+# Variables de entorno — nunca deben entrar en la imagen
+.env
+.env.*
+!.env.example
+
+# Control de versiones
+.git/
+.gitignore
+
+# Docker (evitar recursión)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# IDEs y sistemas operativos
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs y caché de herramientas
+*.log
+.eslintcache
+.stylelintcache
+
+# Archivos de test
+*.test.ts
+*.spec.ts
+coverage/
