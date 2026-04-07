@@ -8,8 +8,16 @@ export const authGuard = async (
 ) => {
   const authStore = useAuthStore()
 
-  // Si ya está autenticado, continuar
+  // Si ya está autenticado, verificar si debe ser redirigido
   if (authStore.isAuthenticated) {
+    // Forzar cambio de contraseña antes de cualquier otra navegación
+    if (authStore.mustChangePassword && to.name !== 'change-password') {
+      return next('/change-password')
+    }
+    // Redirigir empleados que intentan acceder al dashboard principal
+    if (to.path === '/' && authStore.isEmployee) {
+      return next('/empleado')
+    }
     return next()
   }
 
@@ -37,8 +45,11 @@ export const guestGuard = (
 ) => {
   const authStore = useAuthStore()
 
-  // Si ya está autenticado, redirigir al dashboard
+  // Si ya está autenticado, redirigir al dashboard apropiado según el rol
   if (authStore.isAuthenticated) {
+    if (authStore.isEmployee) {
+      return next('/empleado')
+    }
     return next('/')
   }
 

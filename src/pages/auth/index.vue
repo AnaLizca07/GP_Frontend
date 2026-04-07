@@ -1,227 +1,205 @@
 <template>
-  <div class="min-h-screen bg-zinc-50 dark:bg-zinc-900 flex flex-col items-center justify-center p-4">
-    <AuthHeader />
+  <div class="min-h-screen flex">
 
-    <AuthCard>
-      <AuthToggle v-model:active-tab="activeTab" />
+    <!-- Panel izquierdo: marca -->
+    <div
+      class="hidden lg:flex lg:w-5/12 flex-col items-center justify-center p-12 text-white relative overflow-hidden"
+      style="background-color: #003C68;"
+    >
+      <div class="absolute -top-24 -left-24 w-72 h-72 rounded-full opacity-10" style="background-color: white;" />
+      <div class="absolute -bottom-16 -right-16 w-56 h-56 rounded-full opacity-10" style="background-color: white;" />
 
-      <!-- Login Form -->
-      <div v-show="activeTab === 'login'">
-        <UForm
-          :schema="loginSchema"
-          :state="loginForm"
-          @submit="handleLogin"
-          class="space-y-4"
-        >
-          <UFormField
-            name="email"
-            label="Correo Electrónico"
-            required
-          >
-            <UInput
-              v-model="loginForm.email"
-              type="email"
-              placeholder="tu@email.com"
-              :disabled="isLoading"
-              autocomplete="email"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-8" style="background-color: rgba(255,255,255,0.18);">
+          <span class="text-4xl font-bold">PG</span>
+        </div>
+        <h1 class="text-4xl font-bold mb-3 tracking-tight">ProjeGest</h1>
+        <p class="text-white/65 text-base mb-14">Plataforma de Gestión de Proyectos</p>
 
-          <UFormField
-            name="password"
-            label="Contraseña"
-            required
-          >
-            <UInput
-              v-model="loginForm.password"
-              type="password"
-              placeholder="••••••••"
-              :disabled="isLoading"
-              autocomplete="current-password"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
-
-          <UAlert
-            v-if="error"
-            color="error"
-            variant="subtle"
-            :title="error"
-            class="mt-4"
-          />
-
-          <UButton
-            type="submit"
-            block
-            size="lg"
-            :loading="isLoading"
-            :disabled="isLoading"
-            class="mt-6 h-12"
-            color="primary"
-          >
-            Iniciar Sesión
-          </UButton>
-
-          <div class="text-center mt-4">
-            <p class="text-sm text-zinc-500 dark:text-zinc-400">
-              Tip demo: usa correos que contengan "gerente" o "cliente"<br>
-              Ej: <span class="font-mono text-zinc-700 dark:text-zinc-300">gerente@demo.com / cliente@demo.com</span>
-            </p>
+        <div class="space-y-4 w-full max-w-xs text-left">
+          <div v-for="feature in features" :key="feature" class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center" style="background-color: rgba(255,255,255,0.18);">
+              <UIcon name="i-lucide-check" class="w-3.5 h-3.5 text-white" />
+            </div>
+            <span class="text-sm text-white/80">{{ feature }}</span>
           </div>
-        </UForm>
+        </div>
       </div>
+    </div>
 
-      <!-- Register Form -->
-      <div v-show="activeTab === 'register'">
-        <UForm
-          :schema="registerSchema"
-          :state="registerForm"
-          @submit="handleRegister"
-          class="space-y-4"
-        >
-          <UFormField
-            name="name"
-            label="Nombre Completo"
-            required
+    <!-- Panel derecho: formulario -->
+    <div class="flex-1 flex items-center justify-center bg-white dark:bg-zinc-900 overflow-y-auto">
+      <div class="w-full max-w-md px-8 py-12">
+
+        <!-- Logo móvil -->
+        <div class="flex lg:hidden items-center gap-3 mb-10">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background-color: #003C68;">PG</div>
+          <span class="text-xl font-bold">ProjeGest</span>
+        </div>
+
+        <!-- LOGIN -->
+        <div v-if="activeTab === 'login'">
+          <div class="mb-8">
+            <h2 class="text-2xl font-bold text-foreground mb-1">Bienvenido de vuelta</h2>
+            <p class="text-sm text-muted-foreground">Ingresa tus credenciales para continuar</p>
+          </div>
+
+          <UForm
+            :schema="loginSchema"
+            :state="loginForm"
+            @submit="handleLogin"
+            class="space-y-5"
           >
-            <UInput
-              v-model="registerForm.name"
-              type="text"
-              placeholder="Juan Pérez"
-              :disabled="isLoading"
-              autocomplete="name"
+            <UFormField name="email" label="Correo electrónico" required class="w-full">
+              <UInput
+                v-model="loginForm.email"
+                type="email"
+                placeholder="tu@email.com"
+                :disabled="isLoading"
+                autocomplete="email"
+                size="lg"
+                icon="i-lucide-mail"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="password" label="Contraseña" required class="w-full">
+              <UInput
+                v-model="loginForm.password"
+                type="password"
+                placeholder="••••••••"
+                :disabled="isLoading"
+                autocomplete="current-password"
+                size="lg"
+                icon="i-lucide-lock"
+                class="w-full"
+              />
+            </UFormField>
+
+            <div class="flex justify-end -mt-2">
+              <UButton
+                to="/forgot-password"
+                variant="link"
+                size="xs"
+                :disabled="isLoading"
+                class="p-0 text-muted-foreground"
+              >
+                ¿Olvidaste tu contraseña?
+              </UButton>
+            </div>
+
+            <UAlert v-if="error" color="error" variant="subtle" :title="error" />
+
+            <UButton
+              type="submit"
+              block
               size="lg"
-              class="h-12"
-            />
-          </UFormField>
-
-          <UFormField
-            name="email"
-            label="Correo Electrónico"
-            required
-          >
-            <UInput
-              v-model="registerForm.email"
-              type="email"
-              placeholder="juan@empresa.com"
+              :loading="isLoading"
               :disabled="isLoading"
-              autocomplete="email"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
+              color="primary"
+              class="w-full"
+            >
+              Iniciar Sesión
+            </UButton>
+          </UForm>
 
-          <UFormField
-            name="password"
-            label="Contraseña"
-            required
+          <div class="mt-8 pt-6 border-t border-default text-center">
+            <span class="text-sm text-muted-foreground">¿No tienes cuenta? </span>
+            <button class="text-sm font-semibold text-primary hover:underline" @click="activeTab = 'register'">
+              Regístrate
+            </button>
+          </div>
+        </div>
+
+        <!-- REGISTER -->
+        <div v-else>
+          <div class="mb-8">
+            <h2 class="text-2xl font-bold text-foreground mb-1">Crear cuenta</h2>
+            <p class="text-sm text-muted-foreground">Completa los datos para registrarte</p>
+          </div>
+
+          <UForm
+            :schema="registerSchema"
+            :state="registerForm"
+            @submit="handleRegister"
+            class="space-y-4"
           >
-            <UInput
-              v-model="registerForm.password"
-              type="password"
-              placeholder="••••••••"
+            <UFormField name="name" label="Nombre completo" required class="w-full">
+              <UInput
+                v-model="registerForm.name"
+                type="text"
+                placeholder="Juan Pérez"
+                :disabled="isLoading"
+                autocomplete="name"
+                size="lg"
+                icon="i-lucide-user"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="email" label="Correo electrónico" required class="w-full">
+              <UInput
+                v-model="registerForm.email"
+                type="email"
+                placeholder="juan@empresa.com"
+                :disabled="isLoading"
+                autocomplete="email"
+                size="lg"
+                icon="i-lucide-mail"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="password" label="Contraseña" required class="w-full">
+              <UInput
+                v-model="registerForm.password"
+                type="password"
+                placeholder="••••••••"
+                :disabled="isLoading"
+                autocomplete="new-password"
+                size="lg"
+                icon="i-lucide-lock"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField name="role" label="Rol" required class="w-full">
+              <USelect
+                v-model="registerForm.role"
+                :items="roleOptions"
+                :disabled="isLoading"
+                placeholder="Selecciona tu rol"
+                size="lg"
+                icon="i-lucide-user-cog"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UAlert v-if="error" color="error" variant="subtle" :title="error" />
+
+            <UButton
+              type="submit"
+              block
+              size="lg"
+              :loading="isLoading"
               :disabled="isLoading"
-              autocomplete="new-password"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
+              color="primary"
+              class="w-full"
+            >
+              Crear Cuenta
+            </UButton>
+          </UForm>
 
-          <UFormField
-            name="role"
-            label="Rol"
-            required
-          >
-            <USelect
-              v-model="registerForm.role"
-              :options="roleOptions"
-              :disabled="isLoading"
-              placeholder="Empleado"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
+          <div class="mt-8 pt-6 border-t border-default text-center">
+            <span class="text-sm text-muted-foreground">¿Ya tienes cuenta? </span>
+            <button class="text-sm font-semibold text-primary hover:underline" @click="activeTab = 'login'">
+              Inicia sesión
+            </button>
+          </div>
+        </div>
 
-          <UFormField
-            name="department"
-            label="Departamento"
-          >
-            <USelect
-              v-model="registerForm.department"
-              :options="departmentOptions"
-              :disabled="isLoading"
-              placeholder="Seleccionar departamento"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
-
-          <UFormField
-            name="position"
-            label="Cargo"
-          >
-            <UInput
-              v-model="registerForm.position"
-              type="text"
-              placeholder="Desarrollador Senior"
-              :disabled="isLoading"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
-
-          <UFormField
-            name="phone"
-            label="Teléfono"
-          >
-            <UInput
-              v-model="registerForm.phone"
-              type="tel"
-              placeholder="+34 600 000 000"
-              :disabled="isLoading"
-              autocomplete="tel"
-              size="lg"
-              class="h-12"
-            />
-          </UFormField>
-
-          <UAlert
-            v-if="error"
-            color="error"
-            variant="subtle"
-            :title="error"
-            class="mt-4"
-          />
-
-          <UButton
-            type="submit"
-            block
-            size="lg"
-            :loading="isLoading"
-            :disabled="isLoading"
-            class="mt-6 h-12"
-            color="primary"
-          >
-            Crear Cuenta
-          </UButton>
-        </UForm>
       </div>
-
-      <div class="text-center mt-6 pt-4 border-t border-gray-200">
-        <UButton
-          to="/forgot-password"
-          variant="link"
-          size="sm"
-          :disabled="isLoading"
-          class="text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
-        >
-          ¿Olvidaste tu contraseña?
-        </UButton>
-      </div>
-    </AuthCard>
+    </div>
   </div>
 </template>
 
@@ -231,20 +209,22 @@ import { useRouter, useRoute } from 'vue-router'
 import { z } from 'zod'
 import { useAuth } from '@/composables/useAuth'
 import type { LoginCredentials, RegisterData } from '@/types/auth'
-import AuthHeader from '@/components/auth/AuthHeader.vue'
-import AuthCard from '@/components/auth/AuthCard.vue'
-import AuthToggle from '@/components/auth/AuthToggle.vue'
 
 const router = useRouter()
 const route = useRoute()
 const { login, register, isLoading, error, clearError } = useAuth()
 
-// Determinar tab activo basado en la ruta
 const activeTab = ref<'login' | 'register'>(
   route.name === 'register' ? 'register' : 'login'
 )
 
-// Esquemas de validación
+const features = [
+  'Gestión de proyectos en tiempo real',
+  'Control de equipos y tareas',
+  'Nómina y finanzas integradas',
+  'Reportes y seguimiento de OKRs',
+]
+
 const loginSchema = z.object({
   email: z.string().email('Ingresa un email válido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres')
@@ -254,55 +234,28 @@ const registerSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Ingresa un email válido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  role: z.enum(['manager', 'employee', 'sponsor']).refine(val => val, {
-    message: 'Selecciona un rol'
-  }),
-  department: z.string().optional(),
-  position: z.string().optional(),
-  phone: z.string().optional()
+  role: z.enum(['manager', 'sponsor'])
 })
 
-// Formularios
 const loginForm = reactive<LoginCredentials>({
   email: '',
   password: ''
 })
 
-const registerForm = reactive<RegisterData & {
-  name: string
-  department?: string
-  position?: string
-  phone?: string
-}>({
+const registerForm = reactive<RegisterData & { name: string }>({
   email: '',
   password: '',
-  role: 'employee',
-  name: '',
-  department: '',
-  position: '',
-  phone: ''
+  role: 'manager',
+  name: ''
 })
 
-// Opciones
 const roleOptions = [
-  { label: 'Manager', value: 'manager' },
-  { label: 'Empleado', value: 'employee' },
+  { label: 'Gerente', value: 'manager' },
   { label: 'Patrocinador', value: 'sponsor' }
 ]
 
-const departmentOptions = [
-  { label: 'Desarrollo', value: 'development' },
-  { label: 'Diseño', value: 'design' },
-  { label: 'Marketing', value: 'marketing' },
-  { label: 'Ventas', value: 'sales' },
-  { label: 'Recursos Humanos', value: 'hr' },
-  { label: 'Finanzas', value: 'finance' }
-]
-
-// Manejadores
 const handleLogin = async (event: any) => {
   clearError()
-
   try {
     await login(event.data)
     await router.push('/')
@@ -313,9 +266,8 @@ const handleLogin = async (event: any) => {
 
 const handleRegister = async (event: any) => {
   clearError()
-
   try {
-    const { name, department, position, phone, ...registerData } = event.data
+    const { name, ...registerData } = event.data
     await register(registerData)
     await router.push('/')
   } catch (err) {

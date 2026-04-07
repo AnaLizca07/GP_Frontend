@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, AuthState, LoginCredentials, RegisterData, AuthResponse } from '@/types/auth'
 import { authService } from '@/services/auth'
+import { supabase } from '@/lib/supabase'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -16,6 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isManager = computed(() => user.value?.role === 'manager')
   const isEmployee = computed(() => user.value?.role === 'employee')
   const isSponsor = computed(() => user.value?.role === 'sponsor')
+  const mustChangePassword = computed(() => !!user.value?.must_change_password)
 
   // Actions
   const setAuth = (authData: AuthResponse) => {
@@ -25,6 +27,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Persistir en localStorage
     localStorage.setItem('auth_token', authData.access_token)
     localStorage.setItem('user_data', JSON.stringify(authData.user))
+
+    // Autenticar el cliente Supabase Realtime con el JWT del usuario
+    supabase.realtime.setAuth(authData.access_token)
   }
 
   const clearAuth = () => {
@@ -35,6 +40,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Limpiar localStorage
     localStorage.removeItem('auth_token')
     localStorage.removeItem('user_data')
+
+    // Desautenticar Realtime
+    supabase.realtime.setAuth(null)
   }
 
   const login = async (credentials: LoginCredentials) => {
@@ -101,6 +109,25 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const changePassword = async (newPassword: string) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      await authService.changePassword(newPassword)
+      // Limpiar el flag localmente y en localStorage
+      if (user.value) {
+        user.value = { ...user.value, must_change_password: false }
+        localStorage.setItem('user_data', JSON.stringify(user.value))
+      }
+    } catch (err: any) {
+      error.value = err.response?.data?.detail?.message || err.response?.data?.detail || 'Error al cambiar la contraseña'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const requestPasswordReset = async (email: string) => {
     isLoading.value = true
     error.value = null
@@ -133,6 +160,9 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = savedToken
         user.value = JSON.parse(savedUser)
 
+        // Autenticar Realtime con el token guardado
+        supabase.realtime.setAuth(savedToken)
+
         // Validar token en background
         getCurrentUser().catch(() => {
           clearAuth()
@@ -160,6 +190,7 @@ export const useAuthStore = defineStore('auth', () => {
     isManager,
     isEmployee,
     isSponsor,
+    mustChangePassword,
 
     // Actions
     setAuth,
@@ -168,6 +199,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     getCurrentUser,
+    changePassword,
     requestPasswordReset,
     validateRole,
     initializeAuth,
