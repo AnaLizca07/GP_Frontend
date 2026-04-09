@@ -327,14 +327,16 @@ const handleDragEnd = () => {}
       <UDashboardNavbar title="Tareas" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <div class="flex flex-col">
+          <div class="hidden sm:flex flex-col">
             <span class="text-lg font-bold">ProjeGest</span>
             <span class="text-xs text-muted-foreground">Panel de Gerente</span>
           </div>
         </template>
         <template #right>
           <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="md" :loading="loading" @click="fetchTareas" />
-          <UButton v-if="isManager" icon="i-lucide-plus" label="Nueva Tarea" color="primary" size="md" @click="handleNewTask()" />
+          <UButton v-if="isManager" icon="i-lucide-plus" color="primary" size="md" @click="handleNewTask()">
+            <span class="hidden sm:inline">Nueva Tarea</span>
+          </UButton>
         </template>
       </UDashboardNavbar>
     </template>

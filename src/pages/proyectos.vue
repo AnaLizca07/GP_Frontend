@@ -176,13 +176,13 @@ const getMenuItems = (p: Project) => [[
       <UDashboardNavbar title="Proyectos" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <div class="flex flex-col">
+          <div class="hidden sm:flex flex-col">
             <span class="text-lg font-bold">ProjeGest</span>
             <span class="text-xs text-muted-foreground">Panel de Gerente</span>
           </div>
         </template>
         <template #right>
-          <select v-model="filterStatus" class="px-3 py-2 border rounded text-sm dark:bg-gray-800 dark:border-gray-600">
+          <select v-model="filterStatus" class="hidden sm:block px-3 py-2 border rounded text-sm dark:bg-gray-800 dark:border-gray-600">
             <option value="">Todos los estados</option>
             <option value="Activo">Activo</option>
             <option value="Planificación">Planificación</option>
@@ -191,12 +191,26 @@ const getMenuItems = (p: Project) => [[
             <option value="Cancelado">Cancelado</option>
           </select>
           <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" size="md" :loading="loading" @click="fetchProyectos" />
-          <UButton icon="i-lucide-plus" label="Nuevo Proyecto" color="neutral" size="md" @click="openCreateModal" />
+          <UButton icon="i-lucide-plus" color="neutral" size="md" @click="openCreateModal">
+            <span class="hidden sm:inline">Nuevo Proyecto</span>
+          </UButton>
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
+      <!-- Mobile filter (visible only on small screens) -->
+      <div class="sm:hidden mb-4">
+        <select v-model="filterStatus" class="w-full px-3 py-2 border rounded text-sm dark:bg-gray-800 dark:border-gray-600">
+          <option value="">Todos los estados</option>
+          <option value="Activo">Activo</option>
+          <option value="Planificación">Planificación</option>
+          <option value="En Espera">En Espera</option>
+          <option value="Completado">Completado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+
       <div v-if="loading && proyectos.length === 0" class="flex justify-center items-center h-64">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted-foreground" />
       </div>

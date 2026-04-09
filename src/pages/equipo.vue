@@ -171,13 +171,20 @@ const handleSaveRating = async (miembro: MiembroEquipo) => {
   }
 }
 
+const toast = useToast()
+
 const handleAddMember = async (form: NewMemberForm) => {
   try {
     const newEmployee = await createEmployee(form)
     miembros.value.push(convertToMiembro(newEmployee))
     showAddMemberModal.value = false
-  } catch (error) {
-    console.error('Error adding member:', error)
+    toast.add({ title: 'Miembro agregado correctamente', color: 'success', icon: 'i-lucide-check-circle' })
+  } catch (error: any) {
+    const detail = error?.response?.data?.detail
+    const msg = Array.isArray(detail)
+      ? detail.map((d: any) => d.msg).join(', ')
+      : (typeof detail === 'string' ? detail : 'Error al crear el empleado')
+    toast.add({ title: 'Error al agregar miembro', description: msg, color: 'error', icon: 'i-lucide-alert-circle' })
   }
 }
 </script>
@@ -188,19 +195,26 @@ const handleAddMember = async (form: NewMemberForm) => {
       <UDashboardNavbar title="Equipo" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <div class="flex flex-col">
+          <div class="hidden sm:flex flex-col">
             <span class="text-lg font-bold">ProjeGest</span>
             <span class="text-xs text-muted-foreground">{{ isManager ? 'Panel de Gerente' : 'Mi Equipo' }}</span>
           </div>
         </template>
         <template #right>
-          <UInput v-model="searchQuery" placeholder="Buscar miembros..." icon="i-lucide-search" size="md" class="w-64" />
-          <UButton v-if="isManager" icon="i-lucide-plus" label="Agregar Miembro" color="neutral" size="md" @click="showAddMemberModal = true" />
+          <UInput v-model="searchQuery" placeholder="Buscar miembros..." icon="i-lucide-search" size="md" class="hidden sm:block w-48 sm:w-64" />
+          <UButton v-if="isManager" icon="i-lucide-plus" color="neutral" size="md" @click="showAddMemberModal = true">
+            <span class="hidden sm:inline">Agregar Miembro</span>
+          </UButton>
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
+      <!-- Mobile search bar (visible only on small screens) -->
+      <div class="sm:hidden mb-4">
+        <UInput v-model="searchQuery" placeholder="Buscar miembros..." icon="i-lucide-search" size="md" class="w-full" />
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="flex items-center justify-center py-16">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted-foreground" />

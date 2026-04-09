@@ -97,24 +97,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, allowedRoles: ['manager'] }
   },
 
-  // Rutas protegidas - Inbox (todos los roles)
-  {
-    path: '/inbox',
-    name: 'inbox',
-    component: () => import('@/pages/inbox.vue'),
-    beforeEnter: authGuard,
-    meta: { requiresAuth: true, allowedRoles: ['manager', 'employee', 'sponsor'] }
-  },
-
-  // Rutas protegidas - Customers (manager y employee)
-  {
-    path: '/customers',
-    name: 'customers',
-    component: () => import('@/pages/customers.vue'),
-    beforeEnter: [authGuard, roleGuard(['manager', 'employee'])],
-    meta: { requiresAuth: true, allowedRoles: ['manager', 'employee'] }
-  },
-
   // Rutas protegidas - Settings
   {
     path: '/settings',
@@ -127,13 +109,6 @@ const routes: RouteRecordRaw[] = [
         name: 'settings',
         component: () => import('@/pages/settings/index.vue'),
         meta: { allowedRoles: ['manager', 'employee', 'sponsor'] }
-      },
-      {
-        path: 'members',
-        name: 'settings-members',
-        component: () => import('@/pages/settings/members.vue'),
-        beforeEnter: roleGuard(['manager']),
-        meta: { allowedRoles: ['manager'] }
       },
       {
         path: 'notifications',

@@ -4,7 +4,7 @@
       <UDashboardNavbar title="Finanzas" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <div class="flex flex-col">
+          <div class="hidden sm:flex flex-col">
             <span class="text-lg font-bold">ProjeGest</span>
             <span class="text-xs text-muted-foreground">Panel de Gerente</span>
           </div>

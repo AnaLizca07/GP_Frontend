@@ -7,7 +7,7 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 60000, // 60s para tolerar el cold start del servidor en Render (plan gratuito)
 })
 
 // Request interceptor para agregar token de autorización
