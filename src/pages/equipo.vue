@@ -171,13 +171,20 @@ const handleSaveRating = async (miembro: MiembroEquipo) => {
   }
 }
 
+const toast = useToast()
+
 const handleAddMember = async (form: NewMemberForm) => {
   try {
     const newEmployee = await createEmployee(form)
     miembros.value.push(convertToMiembro(newEmployee))
     showAddMemberModal.value = false
-  } catch (error) {
-    console.error('Error adding member:', error)
+    toast.add({ title: 'Miembro agregado correctamente', color: 'success', icon: 'i-lucide-check-circle' })
+  } catch (error: any) {
+    const detail = error?.response?.data?.detail
+    const msg = Array.isArray(detail)
+      ? detail.map((d: any) => d.msg).join(', ')
+      : (typeof detail === 'string' ? detail : 'Error al crear el empleado')
+    toast.add({ title: 'Error al agregar miembro', description: msg, color: 'error', icon: 'i-lucide-alert-circle' })
   }
 }
 </script>
