@@ -108,13 +108,9 @@ const handleDrop = (event: DragEvent) => {
   isDragOver.value = false
 
   const taskId = parseInt(event.dataTransfer!.getData('text/plain'))
-  console.log(`Drop en columna "${props.status}": taskId=${taskId}, draggedTaskId=${draggedTaskId.value}`)
 
   if (taskId) {
-    console.log(`Emitiendo moveTask: ${taskId} -> ${props.status}`)
     emit('moveTask', taskId, props.status)
-  } else {
-    console.log('❌ No se pudo obtener el taskId del drop')
   }
 }
 </script>
