@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import tasksService, { type Task, type TaskCreate, type TaskStatus, type TaskPriority } from '@/services/tasks'
 import projectsService, { type Project } from '@/services/projects'
 import { employeeService as employeesService } from '@/services/employees'
@@ -36,6 +36,27 @@ const form = ref<TaskCreate>({
   priority: 'medium',
   due_date: '',
 })
+
+// ─── Touched + validaciones ───────────────────
+const touched = reactive({ title: false, project_id: false, employee_id: false })
+
+const titleError = computed(() => {
+  if (!form.value.title.trim()) return 'El título es obligatorio'
+  if (form.value.title.trim().length < 3) return 'El título debe tener al menos 3 caracteres'
+  return null
+})
+
+const projectError = computed(() =>
+  !form.value.project_id ? 'Selecciona un proyecto' : null
+)
+
+const employeeError = computed(() =>
+  !form.value.employee_id ? 'Asigna un empleado' : null
+)
+
+const isFormValid = computed(() =>
+  !titleError.value && !projectError.value && !employeeError.value
+)
 
 // ─── Watcher: sincronizar form cuando cambia el task prop ────
 watch(
@@ -90,7 +111,10 @@ const loadOptions = async () => {
 
 // ─── Submit ───────────────────────────────────
 const handleSubmit = async () => {
-  if (!form.value.title || !form.value.project_id || !form.value.employee_id) return
+  touched.title       = true
+  touched.project_id  = true
+  touched.employee_id = true
+  if (!isFormValid.value) return
   saving.value = true
   try {
     const payload: TaskCreate = {
@@ -153,8 +177,14 @@ const statusLabel: Record<string, string> = {
                 v-model="form.title"
                 type="text"
                 placeholder="Descripción breve de la tarea"
-                class="w-full p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:outline-none"
+                class="w-full p-2 border rounded-lg dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                :class="touched.title && titleError ? 'border-red-500 dark:border-red-500' : 'dark:border-gray-600'"
+                @blur="touched.title = true"
               />
+              <p v-if="touched.title && titleError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <span>⚠</span> {{ titleError }}
+              </p>
+              <p v-else class="text-xs text-muted-foreground mt-1">Mínimo 3 caracteres</p>
             </div>
 
             <!-- Descripción -->
@@ -175,11 +205,17 @@ const statusLabel: Record<string, string> = {
               <select
                 v-else
                 v-model.number="form.project_id"
-                class="w-full p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:outline-none"
+                class="w-full p-2 border rounded-lg dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                :class="touched.project_id && projectError ? 'border-red-500 dark:border-red-500' : 'dark:border-gray-600'"
+                @blur="touched.project_id = true"
+                @change="touched.project_id = true"
               >
                 <option :value="0" disabled>Selecciona un proyecto</option>
                 <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
               </select>
+              <p v-if="touched.project_id && projectError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <span>⚠</span> {{ projectError }}
+              </p>
             </div>
 
             <!-- Empleado asignado -->
@@ -187,13 +223,19 @@ const statusLabel: Record<string, string> = {
               <label class="block text-sm font-medium mb-1">Asignar a *</label>
               <select
                 v-model.number="form.employee_id"
-                class="w-full p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:outline-none"
+                class="w-full p-2 border rounded-lg dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                :class="touched.employee_id && employeeError ? 'border-red-500 dark:border-red-500' : 'dark:border-gray-600'"
+                @blur="touched.employee_id = true"
+                @change="touched.employee_id = true"
               >
                 <option :value="0" disabled>Selecciona un empleado</option>
                 <option v-for="e in employees" :key="e.id" :value="e.id">
                   {{ e.name }} — {{ e.position }}
                 </option>
               </select>
+              <p v-if="touched.employee_id && employeeError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <span>⚠</span> {{ employeeError }}
+              </p>
             </div>
 
             <!-- Prioridad + Estado -->
@@ -239,7 +281,7 @@ const statusLabel: Record<string, string> = {
             </button>
             <button
               @click="handleSubmit"
-              :disabled="!form.title || !form.project_id || !form.employee_id || saving"
+              :disabled="saving"
               class="flex-1 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
             >
               {{ saving ? 'Guardando...' : task ? 'Actualizar' : 'Crear Tarea' }}

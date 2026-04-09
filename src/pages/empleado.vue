@@ -30,34 +30,34 @@ const loadingOkrs = ref(false)
 
 // ─── Load data ───────────────────────────────────────────────────────────
 onMounted(async () => {
+  loadingOkrs.value = true
   try {
+    // Tasks, profile and OKRs all start in parallel
     const [tasksRes, profileRes] = await Promise.all([
       tasksService.getTasks(),
       employeeService.getMyProfile(),
+      okrsService.getOkrs({ status: 'active' })
+        .then(data => { okrs.value = data })
+        .catch(e => console.error('Error cargando OKRs:', e))
+        .finally(() => { loadingOkrs.value = false }),
     ])
     tasks.value = tasksRes.tasks
     if (profileRes) {
       employeeId.value = profileRes.id
-      try {
-        performance.value = await kpisService.getEmployeePerformance(profileRes.id)
-      } catch (e) {
-        console.error('Error cargando performance:', e)
-      }
     }
   } catch (err) {
-    console.error('Error cargando tareas:', err)
+    console.error('Error cargando datos del empleado:', err)
+    loadingOkrs.value = false
   } finally {
+    // Show main content as soon as tasks + profile are ready
     loading.value = false
   }
 
-  // Cargar OKRs activos
-  loadingOkrs.value = true
-  try {
-    okrs.value = await okrsService.getOkrs({ status: 'active' })
-  } catch (e) {
-    console.error('Error cargando OKRs:', e)
-  } finally {
-    loadingOkrs.value = false
+  // Load performance in background (non-blocking for initial render)
+  if (employeeId.value) {
+    kpisService.getEmployeePerformance(employeeId.value)
+      .then(data => { performance.value = data })
+      .catch(e => console.error('Error cargando performance:', e))
   }
 })
 
