@@ -333,7 +333,7 @@ onMounted(async () => {
       <UDashboardNavbar title="Dashboard" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <div class="flex flex-col">
+          <div class="hidden sm:flex flex-col">
             <span class="text-lg font-bold">ProjeGest</span>
             <span class="text-xs text-muted-foreground">Panel de Gerente</span>
           </div>
@@ -348,7 +348,7 @@ onMounted(async () => {
             </UButton>
           </UTooltip>
 
-          <UChip size="lg" class="px-3 py-1">
+          <UChip size="lg" class="hidden sm:flex items-center px-3 py-1">
             <UAvatar size="xs" :alt="authStore.user?.email" class="mr-2" />
             <span class="text-sm">{{ authStore.user?.email }}</span>
             <UBadge variant="outline" size="xs" class="ml-2">{{ authStore.user?.role }}</UBadge>

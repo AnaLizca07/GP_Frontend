@@ -38,9 +38,16 @@ const form = ref<NewMemberForm>({
   status: 'active',
 })
 
+const ALLOWED_DOMAINS = ['.cue.edu.co', '.unihumboldt.edu.co']
+
+const isInstitutionalEmail = computed(() =>
+  ALLOWED_DOMAINS.some(d => form.value.email.endsWith(d))
+)
+
 const isFormValid = computed(() => {
   return (
     form.value.email &&
+    isInstitutionalEmail.value &&
     form.value.name &&
     form.value.identification &&
     form.value.position
@@ -114,12 +121,16 @@ watch(() => props.show, (newShow) => {
               <UInput
                 v-model="form.email"
                 type="email"
-                placeholder="juan.perez@empresa.com"
+                placeholder="juan.perez@cue.edu.co"
                 required
                 icon="i-lucide-mail"
+                :color="form.email && !isInstitutionalEmail ? 'error' : undefined"
               />
-              <p class="text-xs text-muted-foreground mt-1">
-                El empleado usará este email para acceder al sistema
+              <p v-if="form.email && !isInstitutionalEmail" class="text-xs text-red-500 mt-1">
+                El correo debe ser institucional: <strong>@cue.edu.co</strong> o <strong>@unihumboldt.edu.co</strong>
+              </p>
+              <p v-else class="text-xs text-muted-foreground mt-1">
+                Solo correos institucionales (@cue.edu.co o @unihumboldt.edu.co)
               </p>
             </div>
 
