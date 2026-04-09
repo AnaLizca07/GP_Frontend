@@ -304,7 +304,7 @@ onMounted(async () => {
   if (authStore.isSponsor) { await $router.push('/sponsor'); return }
 
   await Promise.all([
-    fetchEmployees({ status_filter: 'active' }).then(() => {
+    fetchEmployees().then(() => {
       globalKpis.value[1].value = activeEmployees.value.length.toString()
       globalKpis.value[1].subtexto = `${activeEmployees.value.length} activos`
     }).catch(() => {}),

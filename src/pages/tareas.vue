@@ -199,17 +199,23 @@ watch(selectedProjectId, () => {
 })
 
 onMounted(async () => {
-  try {
-    const res = await projectsService.getProjects()
-    projects.value = res.projects.map((p: any) => ({ id: p.id, name: p.name }))
-  } catch (e) {
-    console.error('Error cargando proyectos:', e)
-  } finally {
-    loadingProjects.value = false
-  }
+  // Fetch projects and tasks in parallel, then cross-filter client-side
+  const [projectsRes, tasksRes] = await Promise.all([
+    projectsService.getProjects().catch((e: any) => { console.error('Error cargando proyectos:', e); return { projects: [] as any[] } }),
+    tasksService.getTasks().catch((e: any) => { console.error('Error cargando tareas:', e); return { tasks: [] as Task[] } }),
+  ])
+
+  projects.value = projectsRes.projects.map((p: any) => ({ id: p.id, name: p.name }))
+  loadingProjects.value = false
+
+  let tasks = tasksRes.tasks
   if (projects.value.length > 0) {
-    fetchTareas()
+    const myProjectIds = new Set(projects.value.map(p => p.id))
+    tasks = tasks.filter((t: Task) => myProjectIds.has(t.project_id))
   }
+  rawTasks.value = tasks
+  tareas.value = tasks.map(taskToKanban)
+  loading.value = false
 })
 
 // ─── Modal: crear / editar ─────────────────────

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import type { NewMemberForm } from '@/types/equipo'
 
 interface Props {
@@ -38,31 +38,58 @@ const form = ref<NewMemberForm>({
   status: 'active',
 })
 
-const ALLOWED_DOMAINS = ['.cue.edu.co', '.unihumboldt.edu.co']
+const ALLOWED_DOMAINS = ['@cue.edu.co', '@unihumboldt.edu.co']
 
 const isInstitutionalEmail = computed(() =>
-  ALLOWED_DOMAINS.some(d => form.value.email.endsWith(d))
+  ALLOWED_DOMAINS.some(d => form.value.email.toLowerCase().endsWith(d))
 )
 
-const isFormValid = computed(() => {
-  return (
-    form.value.email &&
-    isInstitutionalEmail.value &&
-    form.value.name &&
-    form.value.identification &&
-    form.value.position
-  )
+// ─── Touched state ────────────────────────────────────────────────────────────
+const touched = reactive({ email: false, name: false, identification: false, position: false })
+
+// ─── Validaciones en tiempo real ──────────────────────────────────────────────
+const emailError = computed(() => {
+  if (!form.value.email) return 'El correo es obligatorio'
+  if (!form.value.email.includes('@')) return 'Ingresa un correo válido con @'
+  if (!isInstitutionalEmail.value) return 'Solo correos @cue.edu.co o @unihumboldt.edu.co'
+  return null
 })
+
+const nameError = computed(() => {
+  if (!form.value.name.trim()) return 'El nombre es obligatorio'
+  if (form.value.name.trim().length < 3) return 'Ingresa el nombre completo'
+  return null
+})
+
+const identificationError = computed(() => {
+  if (!form.value.identification) return 'La cédula es obligatoria'
+  if (!/^\d+$/.test(form.value.identification)) return 'Solo números, sin puntos ni espacios'
+  if (form.value.identification.length < 6) return 'La cédula debe tener al menos 6 dígitos'
+  return null
+})
+
+const positionError = computed(() => {
+  if (!form.value.position.trim()) return 'El cargo es obligatorio'
+  return null
+})
+
+const isFormValid = computed(() =>
+  !emailError.value && !nameError.value && !identificationError.value && !positionError.value
+)
 
 const handleClose = () => {
   emit('close')
 }
 
 const handleSubmit = () => {
-  if (isFormValid.value) {
-    emit('submit', { ...form.value })
-    resetForm()
-  }
+  // Marcar todos como tocados para mostrar errores pendientes
+  touched.email          = true
+  touched.name           = true
+  touched.identification = true
+  touched.position       = true
+  if (!isFormValid.value) return
+  emit('submit', { ...form.value })
+  resetForm()
 }
 
 const resetForm = () => {
@@ -79,6 +106,10 @@ const resetForm = () => {
     salary_biweekly: null,
     status: 'active',
   }
+  touched.email          = false
+  touched.name           = false
+  touched.identification = false
+  touched.position       = false
 }
 
 watch(() => props.show, (newShow) => {
@@ -122,12 +153,13 @@ watch(() => props.show, (newShow) => {
                 v-model="form.email"
                 type="email"
                 placeholder="juan.perez@cue.edu.co"
-                required
                 icon="i-lucide-mail"
-                :color="form.email && !isInstitutionalEmail ? 'error' : undefined"
+                :color="touched.email && emailError ? 'error' : undefined"
+                @blur="touched.email = true"
               />
-              <p v-if="form.email && !isInstitutionalEmail" class="text-xs text-red-500 mt-1">
-                El correo debe ser institucional: <strong>@cue.edu.co</strong> o <strong>@unihumboldt.edu.co</strong>
+              <p v-if="touched.email && emailError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                {{ emailError }}
               </p>
               <p v-else class="text-xs text-muted-foreground mt-1">
                 Solo correos institucionales (@cue.edu.co o @unihumboldt.edu.co)
@@ -141,20 +173,30 @@ watch(() => props.show, (newShow) => {
                 <UInput
                   v-model="form.name"
                   placeholder="Juan Carlos Pérez González"
-                  required
                   icon="i-lucide-user"
+                  :color="touched.name && nameError ? 'error' : undefined"
+                  @blur="touched.name = true"
                 />
-                <p class="text-xs text-muted-foreground mt-1">Como aparece en la cédula</p>
+                <p v-if="touched.name && nameError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                  {{ nameError }}
+                </p>
+                <p v-else class="text-xs text-muted-foreground mt-1">Como aparece en la cédula</p>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Número de Cédula *</label>
                 <UInput
                   v-model="form.identification"
                   placeholder="1234567890"
-                  required
                   icon="i-lucide-credit-card"
+                  :color="touched.identification && identificationError ? 'error' : undefined"
+                  @blur="touched.identification = true"
                 />
-                <p class="text-xs text-muted-foreground mt-1">Solo números, sin puntos</p>
+                <p v-if="touched.identification && identificationError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                  {{ identificationError }}
+                </p>
+                <p v-else class="text-xs text-muted-foreground mt-1">Solo números, sin puntos</p>
               </div>
             </div>
 
@@ -165,9 +207,14 @@ watch(() => props.show, (newShow) => {
                 <UInput
                   v-model="form.position"
                   placeholder="Desarrollador Frontend"
-                  required
                   icon="i-lucide-briefcase"
+                  :color="touched.position && positionError ? 'error' : undefined"
+                  @blur="touched.position = true"
                 />
+                <p v-if="touched.position && positionError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                  {{ positionError }}
+                </p>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Teléfono</label>
