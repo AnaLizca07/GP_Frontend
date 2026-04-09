@@ -56,8 +56,6 @@ const handleEditTask = () => {
 
 // Drag handlers
 const handleDragStart = (event: DragEvent) => {
-  console.log(`🚀 Iniciando drag de tarea ${props.tarea.id}: ${props.tarea.titulo}`)
-
   if (event.dataTransfer) {
     event.dataTransfer.setData('text/plain', props.tarea.id.toString())
     event.dataTransfer.setData('application/json', JSON.stringify(props.tarea))
