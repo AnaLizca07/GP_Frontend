@@ -49,25 +49,30 @@
         </div>
 
         <!-- Formulario -->
-        <UForm
-          v-else
-          :schema="forgotPasswordSchema"
-          :state="form"
-          @submit="handleSubmit"
-          class="space-y-5"
-        >
-          <UFormField name="email" label="Correo electrónico" required class="w-full">
+        <form v-else @submit.prevent="handleSubmit" class="space-y-5">
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Correo electrónico <span class="text-red-500">*</span></label>
             <UInput
               v-model="form.email"
               type="email"
-              placeholder="tu@email.com"
+              placeholder="tu@cue.edu.co"
               :disabled="isLoading"
               autocomplete="email"
               size="lg"
               icon="i-lucide-mail"
               class="w-full"
+              :color="touched && emailError ? 'error' : undefined"
+              @blur="touched = true"
             />
-          </UFormField>
+            <p v-if="touched && emailError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+              <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+              {{ emailError }}
+            </p>
+            <p v-else-if="!touched || !form.email" class="text-xs text-muted-foreground mt-1">
+              Solo correos institucionales (@cue.edu.co o @unihumboldt.edu.co)
+            </p>
+          </div>
 
           <UAlert
             v-if="error"
@@ -81,13 +86,13 @@
             block
             size="lg"
             :loading="isLoading"
-            :disabled="isLoading"
+            :disabled="isLoading || !!emailError"
             color="primary"
             class="w-full"
           >
             Enviar instrucciones
           </UButton>
-        </UForm>
+        </form>
 
         <div class="mt-8 pt-6 border-t border-default text-center">
           <span class="text-sm text-muted-foreground">¿Recordaste tu contraseña? </span>
@@ -102,13 +107,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { z } from 'zod'
+import { reactive, ref, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { requestPasswordReset, isLoading, error, clearError } = useAuth()
 
 const emailSent = ref(false)
+const touched   = ref(false)
 
 const tips = [
   'Revisa también tu carpeta de spam',
@@ -117,15 +122,22 @@ const tips = [
   'Nunca compartas tu contraseña con nadie',
 ]
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Ingresa un email válido')
-})
+const form = reactive({ email: '' })
 
-const form = reactive({
-  email: ''
+const INSTITUTIONAL_DOMAINS = ['@cue.edu.co', '@unihumboldt.edu.co']
+const isInstitutional = (email: string) =>
+  INSTITUTIONAL_DOMAINS.some(d => email.toLowerCase().endsWith(d))
+
+const emailError = computed(() => {
+  if (!form.email) return 'El correo es obligatorio'
+  if (!form.email.includes('@')) return 'Ingresa un correo válido con @'
+  if (!isInstitutional(form.email)) return 'Solo correos @cue.edu.co o @unihumboldt.edu.co'
+  return null
 })
 
 const handleSubmit = async () => {
+  touched.value = true
+  if (emailError.value) return
   clearError()
   try {
     await requestPasswordReset(form.email)

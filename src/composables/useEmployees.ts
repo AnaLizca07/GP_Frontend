@@ -1,6 +1,12 @@
 import { ref, computed } from 'vue'
 import { employeeService, type Employee, type CreateEmployeeData, type UpdateEmployeeData } from '@/services/employees'
 
+// Module-level cache shared across all useEmployees() calls
+const _cache = ref<Employee[]>([])
+const _cacheTotal = ref(0)
+const _cacheTs = ref(0)
+const CACHE_TTL_MS = 60_000 // 1 minuto
+
 export function useEmployees() {
   const employees = ref<Employee[]>([])
   const loading = ref(false)
@@ -23,7 +29,22 @@ export function useEmployees() {
     page?: number
     limit?: number
     status_filter?: 'active' | 'inactive'
+    force?: boolean
   }) => {
+    const now = Date.now()
+    // Use module-level cache if fresh and no special filters requested
+    if (
+      !params?.force &&
+      !params?.page &&
+      !params?.status_filter &&
+      _cache.value.length > 0 &&
+      now - _cacheTs.value < CACHE_TTL_MS
+    ) {
+      employees.value = _cache.value
+      total.value = _cacheTotal.value
+      return
+    }
+
     loading.value = true
     error.value = null
 
@@ -33,6 +54,12 @@ export function useEmployees() {
       total.value = response.total
       currentPage.value = response.page
       itemsPerPage.value = response.limit
+      // Populate cache only for full (unfiltered) fetches
+      if (!params?.status_filter && !params?.page) {
+        _cache.value = response.employees
+        _cacheTotal.value = response.total
+        _cacheTs.value = Date.now()
+      }
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Error al cargar empleados'
       throw err
@@ -63,6 +90,7 @@ export function useEmployees() {
       const newEmployee = await employeeService.createEmployee(employeeData)
       employees.value.unshift(newEmployee)
       total.value++
+      _cacheTs.value = 0 // Invalidate cache
       return newEmployee
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Error al crear empleado'
@@ -82,6 +110,7 @@ export function useEmployees() {
       if (index !== -1) {
         employees.value[index] = updatedEmployee
       }
+      _cacheTs.value = 0 // Invalidate cache
       return updatedEmployee
     } catch (err: any) {
       error.value = err.response?.data?.detail || 'Error al actualizar empleado'

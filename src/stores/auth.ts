@@ -90,23 +90,29 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // In-flight deduplication: if a request is already pending, reuse it
+  let _currentUserPromise: Promise<any> | null = null
+
   const getCurrentUser = async () => {
     if (!token.value) return null
+    if (_currentUserPromise) return _currentUserPromise
 
     isLoading.value = true
+    _currentUserPromise = authService.getCurrentUser()
+      .then(userData => {
+        user.value = userData
+        return userData
+      })
+      .catch((err: any) => {
+        if (err.response?.status === 401) clearAuth()
+        throw err
+      })
+      .finally(() => {
+        isLoading.value = false
+        _currentUserPromise = null
+      })
 
-    try {
-      const userData = await authService.getCurrentUser()
-      user.value = userData
-      return userData
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        clearAuth()
-      }
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    return _currentUserPromise
   }
 
   const changePassword = async (newPassword: string) => {

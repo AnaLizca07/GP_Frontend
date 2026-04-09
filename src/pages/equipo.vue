@@ -61,14 +61,19 @@ const convertToMiembro = (employee: any): MiembroEquipo => ({
   status: employee.status,
 })
 
-/** Employee view: unique colleagues from all shared projects */
+/** Employee view: unique colleagues from all shared projects — parallel fetch */
 const loadColleagues = async (): Promise<MiembroEquipo[]> => {
   const projectsRes = await projectsService.getProjects({ limit: 100 })
+  if (!projectsRes.projects.length) return []
+
+  // Fetch all project members in parallel instead of sequentially
+  const allMemberLists = await Promise.all(
+    projectsRes.projects.map(p => projectsService.getProjectEmployees(p.id))
+  )
+
   const seen = new Set<number>()
   const list: MiembroEquipo[] = []
-
-  for (const project of projectsRes.projects) {
-    const members = await projectsService.getProjectEmployees(project.id)
+  for (const members of allMemberLists) {
     for (const m of members) {
       if (!seen.has(m.employee_id)) {
         seen.add(m.employee_id)

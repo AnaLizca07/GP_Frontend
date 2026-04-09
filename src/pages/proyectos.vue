@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import projectsService, { type Project, type ProjectCreate } from '@/services/projects'
 import AssignEmployeesModal from '@/components/proyectos/AssignEmployeesModal.vue'
@@ -76,8 +76,38 @@ const fetchSponsors = async () => {
 
 onMounted(() => { fetchProyectos(); fetchSponsors() })
 
+// ─── Touched state ────────────────────────────────────────────────────────────
+const formTouched = reactive({ name: false, start_date: false, end_date: false })
+
+// ─── Validaciones en tiempo real ──────────────────────────────────────────────
+const nameFormError = computed(() => {
+  if (!form.value.name.trim()) return 'El nombre es obligatorio'
+  if (form.value.name.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres'
+  return null
+})
+
+const startDateError = computed(() => {
+  if (!form.value.start_date) return 'La fecha de inicio es obligatoria'
+  return null
+})
+
+const endDateError = computed(() => {
+  if (!form.value.end_date) return null // opcional
+  if (form.value.start_date && form.value.end_date <= form.value.start_date) {
+    return 'La fecha de fin debe ser posterior a la fecha de inicio'
+  }
+  return null
+})
+
+const isProjectFormValid = computed(() =>
+  !nameFormError.value && !startDateError.value && !endDateError.value
+)
+
 const resetForm = () => {
   form.value = { name: '', description: '', start_date: '', end_date: '', budget: undefined, sponsor_id: undefined, status: 'planning' }
+  formTouched.name       = false
+  formTouched.start_date = false
+  formTouched.end_date   = false
 }
 
 const openCreateModal = () => { isEditMode.value = false; editingId.value = null; resetForm(); showModal.value = true }
@@ -85,13 +115,19 @@ const openCreateModal = () => { isEditMode.value = false; editingId.value = null
 const openEditModal = (p: Project) => {
   isEditMode.value = true; editingId.value = p.id
   form.value = { name: p.name, description: p.description ?? '', start_date: p.start_date, end_date: p.end_date ?? '', budget: p.budget, sponsor_id: p.sponsor_id, status: p.status }
+  formTouched.name       = false
+  formTouched.start_date = false
+  formTouched.end_date   = false
   showModal.value = true
 }
 
 const closeModal = () => { showModal.value = false; isEditMode.value = false; editingId.value = null; resetForm() }
 
 const handleSubmit = async () => {
-  if (!form.value.name || !form.value.start_date) return
+  formTouched.name       = true
+  formTouched.start_date = true
+  formTouched.end_date   = true
+  if (!isProjectFormValid.value) return
   loading.value = true
   try {
     const payload = {
@@ -370,8 +406,16 @@ const getMenuItems = (p: Project) => [[
           <h3 class="text-lg font-semibold mb-4">{{ isEditMode ? 'Editar Proyecto' : 'Nuevo Proyecto' }}</h3>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-1">Nombre *</label>
-              <input v-model="form.name" type="text" placeholder="Nombre del proyecto" class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600" />
+              <label class="block text-sm font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
+              <input
+                v-model="form.name"
+                type="text"
+                placeholder="Nombre del proyecto"
+                class="w-full p-2 border rounded dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                :class="formTouched.name && nameFormError ? 'border-red-500 dark:border-red-500' : 'dark:border-gray-600'"
+                @blur="formTouched.name = true"
+              />
+              <p v-if="formTouched.name && nameFormError" class="text-xs text-red-500 mt-1">⚠ {{ nameFormError }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium mb-1">Descripción</label>
@@ -379,12 +423,28 @@ const getMenuItems = (p: Project) => [[
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium mb-1">Fecha inicio *</label>
-                <input v-model="form.start_date" type="date" class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600" />
+                <label class="block text-sm font-medium mb-1">Fecha inicio <span class="text-red-500">*</span></label>
+                <input
+                  v-model="form.start_date"
+                  type="date"
+                  class="w-full p-2 border rounded dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                  :class="formTouched.start_date && startDateError ? 'border-red-500 dark:border-red-500' : 'dark:border-gray-600'"
+                  @blur="formTouched.start_date = true"
+                  @change="formTouched.start_date = true"
+                />
+                <p v-if="formTouched.start_date && startDateError" class="text-xs text-red-500 mt-1">⚠ {{ startDateError }}</p>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Fecha fin</label>
-                <input v-model="form.end_date" type="date" class="w-full p-2 border rounded dark:bg-gray-800 dark:border-gray-600" />
+                <input
+                  v-model="form.end_date"
+                  type="date"
+                  class="w-full p-2 border rounded dark:bg-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                  :class="formTouched.end_date && endDateError ? 'border-red-500 dark:border-red-500' : 'dark:border-gray-600'"
+                  @blur="formTouched.end_date = true"
+                  @change="formTouched.end_date = true; formTouched.start_date = true"
+                />
+                <p v-if="endDateError" class="text-xs text-red-500 mt-1">⚠ {{ endDateError }}</p>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -413,7 +473,7 @@ const getMenuItems = (p: Project) => [[
           </div>
           <div class="flex gap-3 mt-6">
             <button @click="closeModal" class="flex-1 p-2 border rounded hover:bg-gray-100 dark:hover:bg-gray-700">Cancelar</button>
-            <button @click="handleSubmit" :disabled="!form.name || !form.start_date || loading" class="flex-1 p-2 bg-gray-800 text-white rounded hover:bg-gray-700 disabled:opacity-50">
+            <button @click="handleSubmit" :disabled="loading" class="flex-1 p-2 bg-gray-800 text-white rounded hover:bg-gray-700 disabled:opacity-50">
               {{ loading ? 'Guardando...' : isEditMode ? 'Actualizar' : 'Crear' }}
             </button>
           </div>

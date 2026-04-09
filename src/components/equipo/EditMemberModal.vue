@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import type { MiembroEquipo } from '@/types/equipo'
 import type { UpdateEmployeeData } from '@/services/employees'
 
@@ -35,8 +35,30 @@ const form = ref<UpdateEmployeeData & { salary_type?: 'monthly' | 'hourly' | 'bi
   salary_biweekly: null,
 })
 
+// ─── Touched state ────────────────────────────────────────────────────────────
+const touched = reactive({ name: false, identification: false, position: false })
+
+// ─── Validaciones en tiempo real ──────────────────────────────────────────────
+const nameError = computed(() => {
+  if (!form.value.name?.trim()) return 'El nombre es obligatorio'
+  if (form.value.name.trim().length < 3) return 'Ingresa el nombre completo'
+  return null
+})
+
+const identificationError = computed(() => {
+  if (!form.value.identification) return 'La cédula es obligatoria'
+  if (!/^\d+$/.test(form.value.identification)) return 'Solo números, sin puntos ni espacios'
+  if (form.value.identification.length < 6) return 'La cédula debe tener al menos 6 dígitos'
+  return null
+})
+
+const positionError = computed(() => {
+  if (!form.value.position?.trim()) return 'El cargo es obligatorio'
+  return null
+})
+
 const isFormValid = computed(() =>
-  !!(form.value.name && form.value.identification && form.value.position)
+  !nameError.value && !identificationError.value && !positionError.value
 )
 
 watch(() => props.member, (member) => {
@@ -52,10 +74,17 @@ watch(() => props.member, (member) => {
       salary_hourly: member.salary_hourly ?? null,
       salary_biweekly: member.salary_biweekly ?? null,
     }
+    // Resetear touched al abrir con nuevo miembro
+    touched.name           = false
+    touched.identification = false
+    touched.position       = false
   }
 }, { immediate: true })
 
 const handleSubmit = () => {
+  touched.name           = true
+  touched.identification = true
+  touched.position       = true
   if (!isFormValid.value || !props.member) return
   emit('submit', props.member.id, { ...form.value })
 }
@@ -85,11 +114,32 @@ const handleSubmit = () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label class="block text-sm font-medium mb-1">Nombre completo *</label>
-                <UInput v-model="form.name" placeholder="Juan Carlos Pérez" required icon="i-lucide-user" />
+                <UInput
+                  v-model="form.name"
+                  placeholder="Juan Carlos Pérez"
+                  icon="i-lucide-user"
+                  :color="touched.name && nameError ? 'error' : undefined"
+                  @blur="touched.name = true"
+                />
+                <p v-if="touched.name && nameError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                  {{ nameError }}
+                </p>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Cédula *</label>
-                <UInput v-model="form.identification" placeholder="1234567890" required icon="i-lucide-credit-card" />
+                <UInput
+                  v-model="form.identification"
+                  placeholder="1234567890"
+                  icon="i-lucide-credit-card"
+                  :color="touched.identification && identificationError ? 'error' : undefined"
+                  @blur="touched.identification = true"
+                />
+                <p v-if="touched.identification && identificationError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                  {{ identificationError }}
+                </p>
+                <p v-else class="text-xs text-muted-foreground mt-1">Solo números, sin puntos</p>
               </div>
             </div>
 
@@ -97,11 +147,22 @@ const handleSubmit = () => {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label class="block text-sm font-medium mb-1">Cargo *</label>
-                <UInput v-model="form.position" placeholder="Desarrollador Frontend" required icon="i-lucide-briefcase" />
+                <UInput
+                  v-model="form.position"
+                  placeholder="Desarrollador Frontend"
+                  icon="i-lucide-briefcase"
+                  :color="touched.position && positionError ? 'error' : undefined"
+                  @blur="touched.position = true"
+                />
+                <p v-if="touched.position && positionError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
+                  {{ positionError }}
+                </p>
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">Teléfono</label>
                 <UInput v-model="form.phone" placeholder="+57 300 123 4567" icon="i-lucide-phone" />
+                <p class="text-xs text-muted-foreground mt-1">Opcional — ej: +57 300 123 4567</p>
               </div>
             </div>
 
@@ -139,12 +200,13 @@ const handleSubmit = () => {
               <UInput v-else v-model="form.salary_hourly" type="number" placeholder="21875" icon="i-lucide-dollar-sign">
                 <template #trailing><span class="text-xs text-muted-foreground">COP/hora</span></template>
               </UInput>
+              <p class="text-xs text-muted-foreground mt-1">Valor en pesos sin puntos — Opcional</p>
             </div>
 
             <!-- Buttons -->
             <div class="flex gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
               <UButton label="Cancelar" color="neutral" variant="outline" @click="$emit('close')" class="flex-1" />
-              <UButton label="Guardar cambios" type="submit" :loading="loading" :disabled="!isFormValid" class="flex-1" />
+              <UButton label="Guardar cambios" type="submit" :loading="loading" :disabled="loading" class="flex-1" />
             </div>
           </form>
         </div>
