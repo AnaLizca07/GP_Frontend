@@ -195,19 +195,26 @@ const handleAddMember = async (form: NewMemberForm) => {
       <UDashboardNavbar title="Equipo" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
-          <div class="flex flex-col">
+          <div class="hidden sm:flex flex-col">
             <span class="text-lg font-bold">ProjeGest</span>
             <span class="text-xs text-muted-foreground">{{ isManager ? 'Panel de Gerente' : 'Mi Equipo' }}</span>
           </div>
         </template>
         <template #right>
-          <UInput v-model="searchQuery" placeholder="Buscar miembros..." icon="i-lucide-search" size="md" class="w-64" />
-          <UButton v-if="isManager" icon="i-lucide-plus" label="Agregar Miembro" color="neutral" size="md" @click="showAddMemberModal = true" />
+          <UInput v-model="searchQuery" placeholder="Buscar miembros..." icon="i-lucide-search" size="md" class="hidden sm:block w-48 sm:w-64" />
+          <UButton v-if="isManager" icon="i-lucide-plus" color="neutral" size="md" @click="showAddMemberModal = true">
+            <span class="hidden sm:inline">Agregar Miembro</span>
+          </UButton>
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
+      <!-- Mobile search bar (visible only on small screens) -->
+      <div class="sm:hidden mb-4">
+        <UInput v-model="searchQuery" placeholder="Buscar miembros..." icon="i-lucide-search" size="md" class="w-full" />
+      </div>
+
       <!-- Loading -->
       <div v-if="loading" class="flex items-center justify-center py-16">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted-foreground" />
