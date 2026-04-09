@@ -1,53 +1,82 @@
 <script setup lang="ts">
-import { useFetch, formatTimeAgo } from '@vueuse/core'
+import { formatTimeAgo } from '@vueuse/core'
 import { useDashboard } from '../composables/useDashboard'
-import type { Notification } from '../types'
+import { useNotificationsStore } from '../stores/notifications'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
-
-const { data: notifications } = useFetch('https://dashboard-template.nuxt.dev/api/notifications', { initialData: [] }).json<Notification[]>()
+const store = useNotificationsStore()
 </script>
 
 <template>
   <USlideover
     v-model:open="isNotificationsSlideoverOpen"
-    title="Notifications"
+    title="Notificaciones"
   >
     <template #body>
-      <RouterLink
-        v-for="notification in notifications"
-        :key="notification.id"
-        :to="`/inbox?id=${notification.id}`"
-        class="px-3 py-2.5 rounded-md hover:bg-elevated/50 flex items-center gap-3 relative -mx-3 first:-mt-3 last:-mb-3"
+      <!-- Sin notificaciones -->
+      <div
+        v-if="store.notifications.length === 0"
+        class="flex flex-col items-center justify-center py-12 gap-3 text-center"
       >
-        <UChip
-          color="error"
-          :show="!!notification.unread"
-          inset
-        >
-          <UAvatar
-            v-bind="notification.sender.avatar"
-            :alt="notification.sender.name"
-            size="md"
+        <UIcon name="i-lucide-bell-off" class="size-10 text-muted" />
+        <p class="text-sm text-muted">No tienes notificaciones</p>
+      </div>
+
+      <!-- Lista de notificaciones -->
+      <template v-else>
+        <!-- Acciones globales -->
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs text-muted">
+            {{ store.unreadCount }} sin leer
+          </span>
+          <UButton
+            v-if="store.unreadCount > 0"
+            variant="ghost"
+            size="xs"
+            label="Marcar todas como leídas"
+            @click="store.markAllAsRead()"
           />
-        </UChip>
-
-        <div class="text-sm flex-1">
-          <p class="flex items-center justify-between">
-            <span class="text-highlighted font-medium">{{ notification.sender.name }}</span>
-
-            <time
-              :datetime="notification.date"
-              class="text-muted text-xs"
-              v-text="formatTimeAgo(new Date(notification.date))"
-            />
-          </p>
-
-          <p class="text-dimmed">
-            {{ notification.body }}
-          </p>
         </div>
-      </RouterLink>
+
+        <!-- Notificación individual -->
+        <div
+          v-for="n in store.notifications"
+          :key="n.id"
+          class="px-3 py-3 rounded-md flex items-start gap-3 relative -mx-3 cursor-pointer transition-colors"
+          :class="n.read ? 'opacity-60 hover:bg-elevated/30' : 'hover:bg-elevated/50'"
+          @click="store.markAsRead(n.id)"
+        >
+          <!-- Indicador no leído -->
+          <span
+            v-if="!n.read"
+            class="absolute top-3.5 right-3 size-2 rounded-full bg-primary"
+          />
+
+          <!-- Ícono del tipo -->
+          <div class="mt-0.5 size-8 rounded-full bg-elevated flex items-center justify-center shrink-0">
+            <UIcon :name="n.icon" class="size-4 text-primary" />
+          </div>
+
+          <!-- Contenido -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-highlighted truncate">{{ n.title }}</p>
+            <p class="text-xs text-dimmed mt-0.5 leading-relaxed">{{ n.description }}</p>
+            <time class="text-xs text-muted mt-1 block">
+              {{ formatTimeAgo(new Date(n.created_at)) }}
+            </time>
+          </div>
+
+          <!-- Botón eliminar -->
+          <UButton
+            icon="i-lucide-x"
+            variant="ghost"
+            size="xs"
+            color="neutral"
+            class="shrink-0 opacity-0 group-hover:opacity-100"
+            @click.stop="store.remove(n.id)"
+          />
+        </div>
+      </template>
     </template>
   </USlideover>
 </template>
