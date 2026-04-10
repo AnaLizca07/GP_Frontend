@@ -73,18 +73,16 @@ export function useRealtime() {
 
       const employeeId = profile.id
 
+      // Sin filtro a nivel de BD para evitar 403 por RLS en postgres_changes.
+      // Filtramos manualmente en el callback por employee_id.
       const taskChannel = supabase
         .channel(`employee-tasks-${employeeId}`)
         .on(
           'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'tasks',
-            filter: `employee_id=eq.${employeeId}`,
-          },
+          { event: 'INSERT', schema: 'public', table: 'tasks' },
           (payload) => {
             const row = payload.new as any
+            if (Number(row.employee_id) !== employeeId) return
             notificationsStore.add({
               title: 'Nueva tarea asignada',
               description: `Se te asignó: "${row.title}"`,
@@ -95,15 +93,11 @@ export function useRealtime() {
         )
         .on(
           'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'tasks',
-            filter: `employee_id=eq.${employeeId}`,
-          },
+          { event: 'UPDATE', schema: 'public', table: 'tasks' },
           (payload) => {
             const prev = payload.old as any
             const next = payload.new as any
+            if (Number(next.employee_id) !== employeeId) return
             if (prev.due_date !== next.due_date) {
               notificationsStore.add({
                 title: 'Tarea actualizada',
@@ -114,7 +108,9 @@ export function useRealtime() {
             }
           }
         )
-        .subscribe()
+        .subscribe((status, err) => {
+          if (err) console.warn('[Realtime] Canal de tareas:', status, err)
+        })
 
       channels.value.push(taskChannel)
 
@@ -123,13 +119,10 @@ export function useRealtime() {
         .channel(`employee-ratings-${employeeId}`)
         .on(
           'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'employee_ratings',
-            filter: `employee_id=eq.${employeeId}`,
-          },
-          () => {
+          { event: 'INSERT', schema: 'public', table: 'employee_ratings' },
+          (payload) => {
+            const row = payload.new as any
+            if (Number(row.employee_id) !== employeeId) return
             notificationsStore.add({
               title: 'Nueva calificación recibida',
               description: 'Tu gerente ha registrado una nueva evaluación de desempeño',
@@ -139,7 +132,9 @@ export function useRealtime() {
             })
           }
         )
-        .subscribe()
+        .subscribe((status, err) => {
+          if (err) console.warn('[Realtime] Canal de calificaciones:', status, err)
+        })
 
       channels.value.push(ratingsChannel)
     } catch (err) {
