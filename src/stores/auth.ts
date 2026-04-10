@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { User, AuthState, LoginCredentials, RegisterData, AuthResponse } from '@/types/auth'
 import { authService } from '@/services/auth'
 import { supabase } from '@/lib/supabase'
+import { useNotificationsStore } from '@/stores/notifications'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -30,9 +31,15 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Autenticar el cliente Supabase Realtime con el JWT del usuario
     supabase.realtime.setAuth(authData.access_token)
+
+    // Cargar las notificaciones propias del usuario (segregadas por ID)
+    useNotificationsStore().initForUser(authData.user.id)
   }
 
   const clearAuth = () => {
+    // Limpiar notificaciones de memoria antes de borrar el usuario
+    useNotificationsStore().clearSession()
+
     user.value = null
     token.value = null
     error.value = null
@@ -168,6 +175,11 @@ export const useAuthStore = defineStore('auth', () => {
 
         // Autenticar Realtime con el token guardado
         supabase.realtime.setAuth(savedToken)
+
+        // Cargar las notificaciones del usuario que tenía sesión activa
+        if (user.value) {
+          useNotificationsStore().initForUser(user.value.id)
+        }
 
         // Validar token en background
         getCurrentUser().catch(() => {

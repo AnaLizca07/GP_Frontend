@@ -57,7 +57,7 @@
               <UIcon name="i-lucide-check-circle" class="w-7 h-7 text-green-600 dark:text-green-400" />
             </div>
             <p class="font-semibold text-foreground">¡Contraseña actualizada!</p>
-            <p class="text-sm text-muted-foreground">Redirigiendo a tu panel…</p>
+            <p class="text-sm text-muted-foreground">Inicia sesión con tu nueva contraseña…</p>
           </div>
         </div>
 
@@ -222,10 +222,10 @@ async function handleSubmit() {
   try {
     await authStore.changePassword(form.password)
     success.value = true
-    setTimeout(() => {
-      if (authStore.isEmployee)     router.push('/empleado')
-      else if (authStore.isSponsor) router.push('/sponsor')
-      else                          router.push('/')
+    // Cerrar sesión y redirigir al login para que el usuario ingrese con su nueva contraseña
+    setTimeout(async () => {
+      await authStore.logout()
+      router.push('/login')
     }, 1500)
   } catch (err: any) {
     serverError.value =
