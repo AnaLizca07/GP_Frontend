@@ -92,6 +92,7 @@
                 autocomplete="new-password"
                 size="lg"
                 icon="i-lucide-lock"
+                class="w-full"
                 :ui="{ trailing: 'pe-1' }"
                 @blur="touched.password = true"
               >
@@ -120,6 +121,7 @@
                 autocomplete="new-password"
                 size="lg"
                 icon="i-lucide-lock-keyhole"
+                class="w-full"
                 :ui="{ trailing: 'pe-1' }"
                 @blur="touched.confirm = true"
               >
