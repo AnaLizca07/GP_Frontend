@@ -216,7 +216,8 @@ function fmtDate(s: string | null | undefined): string {
       </UDashboardNavbar>
     </template>
 
-    <!-- Body (default slot) -->
+    <!-- Body (default slot) — overflow wrapper stops chart SVGs from expanding the flex item -->
+    <div class="w-full overflow-x-hidden">
     <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
 
       <!-- Loading skeleton -->
@@ -382,6 +383,7 @@ function fmtDate(s: string | null | undefined): string {
         </div>
 
       </template>
+    </div>
     </div>
   </UDashboardPanel>
 </template>
