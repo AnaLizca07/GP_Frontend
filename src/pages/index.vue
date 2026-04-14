@@ -57,7 +57,7 @@ async function selectProject(id: number | null) {
 const globalKpis = ref([
   { title: 'Proyectos Activos', icon: 'i-lucide-folder-open', value: '—', subtexto: 'Cargando…' },
   { title: 'Miembros del Equipo', icon: 'i-lucide-users', value: '—', subtexto: 'Cargando…' },
-  { title: 'Presupuesto Total', icon: 'i-lucide-circle-dollar-sign', value: '$2.4M', subtexto: '65% utilizado' },
+  { title: 'Presupuesto Total', icon: 'i-lucide-circle-dollar-sign', value: '—', subtexto: 'Selecciona un proyecto' },
 ])
 
 const kpiCards = computed(() => {
@@ -132,16 +132,12 @@ function spiLabel(spi: number) {
 }
 
 // ─── Budget utilization ───────────────────────────────────────────────────
-const budgetUtilization = computed(() => budgetSummary.value?.consumed_percentage ?? 65)
+const budgetUtilization = computed(() => budgetSummary.value?.consumed_percentage ?? 0)
 
 // ─── Estado de Tareas ─────────────────────────────────────────────────────
 const taskStatusData = computed(() => {
   if (!projectKpis.value || projectKpis.value.total_tasks === 0) {
-    return [
-      { label: 'Completadas', value: 45, color: '#22C55E' },
-      { label: 'En Progreso', value: 32, color: '#0070C0' },
-      { label: 'Pendientes', value: 18, color: '#94A3B8' },
-    ]
+    return []
   }
   const total = projectKpis.value.total_tasks
   return [
@@ -155,14 +151,8 @@ const taskStatusData = computed(() => {
 })
 
 // ─── Alertas ──────────────────────────────────────────────────────────────
-const staticAlertas = [
-  { title: 'Proyecto atrasado', description: 'Sistema de Reportería - 3 días de retraso', badge: 'Crítica', color: 'error' as const },
-  { title: 'Presupuesto límite', description: 'Portal de Clientes alcanzó el 90% del presupuesto', badge: 'Atención', color: 'warning' as const },
-  { title: 'Nueva solicitud', description: '5 nuevas solicitudes de proyecto pendientes', badge: 'Info', color: 'info' as const },
-]
-
 const alertasData = computed(() => {
-  if (!projectKpis.value) return staticAlertas
+  if (!projectKpis.value) return []
   const k = projectKpis.value
   const alerts: typeof staticAlertas = []
 
