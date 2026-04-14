@@ -182,212 +182,206 @@ function fmtDate(s: string | null | undefined): string {
 </script>
 
 <template>
-  <UDashboardPanel id="proyecto-dashboard" :ui="{ body: 'overflow-x-hidden' }">
-  <template #body>
-  <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6 overflow-x-hidden">
+  <UDashboardPanel id="proyecto-dashboard">
+    <template #header>
+      <UDashboardNavbar :ui="{ right: 'gap-2' }">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+          <UButton
+            icon="i-lucide-arrow-left"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="router.push('/proyectos')"
+          />
+          <div class="flex flex-col min-w-0">
+            <div v-if="loading" class="h-5 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <span v-else class="text-base font-bold truncate leading-tight">{{ kpis?.project_name ?? 'Proyecto' }}</span>
+            <span
+              v-if="kpis && !loading"
+              class="inline-block text-xs px-2 py-0.5 rounded-full font-medium w-fit mt-0.5"
+              :class="statusColor[kpis.status] ?? 'bg-gray-100 text-gray-600'"
+            >
+              {{ statusLabel[kpis.status] ?? kpis.status }}
+            </span>
+          </div>
+        </template>
+        <template #right>
+          <ExportPdfButton
+            :url="`/api/projects/${projectId}/report/pdf`"
+            :filename="`proyecto_${projectId}_reporte.pdf`"
+            label="Exportar PDF"
+          />
+        </template>
+      </UDashboardNavbar>
+    </template>
 
-    <!-- Back + header -->
-    <div class="flex items-start justify-between gap-4 flex-wrap">
-      <div class="flex items-center gap-3">
-        <UButton
-          icon="i-lucide-arrow-left"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          @click="router.push('/proyectos')"
-        />
-        <div>
-          <div v-if="loading" class="h-7 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <h1 v-else class="text-2xl font-bold">{{ kpis?.project_name ?? 'Proyecto' }}</h1>
-          <span
-            v-if="kpis && !loading"
-            class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium"
-            :class="statusColor[kpis.status] ?? 'bg-gray-100 text-gray-600'"
-          >
-            {{ statusLabel[kpis.status] ?? kpis.status }}
-          </span>
-        </div>
+    <!-- Body (default slot) -->
+    <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
+
+      <!-- Loading skeleton -->
+      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div v-for="n in 4" :key="n" class="h-28 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
       </div>
 
-      <ExportPdfButton
-        :url="`/api/projects/${projectId}/report/pdf`"
-        :filename="`proyecto_${projectId}_reporte.pdf`"
-        label="Exportar PDF"
-      />
-    </div>
+      <!-- Error -->
+      <div v-else-if="error" class="text-center py-16 text-red-500">{{ error }}</div>
 
-    <!-- Loading skeleton -->
-    <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div v-for="n in 4" :key="n" class="h-28 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
-    </div>
+      <template v-else-if="kpis">
 
-    <!-- Error -->
-    <div v-else-if="error" class="text-center py-16 text-red-500">{{ error }}</div>
-
-    <template v-else-if="kpis">
-
-      <!-- KPI Cards row -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <!-- Progress -->
-        <div class="sm:col-span-2 lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 flex flex-col items-center justify-center gap-2">
-          <CircularProgress
-            :value="kpis.progress_percentage"
-            :size="80"
-            color="#3B82F6"
-            label="Avance"
-          />
-        </div>
-
-        <!-- Tasks -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4">
-          <p class="text-xs text-muted-foreground mb-2">Tareas</p>
-          <p class="text-2xl font-bold">{{ kpis.total_tasks }}</p>
-          <div class="mt-2 space-y-1">
-            <div class="flex justify-between text-xs">
-              <span class="text-green-600">✓ {{ kpis.completed_tasks }} completadas</span>
-            </div>
-            <div class="flex justify-between text-xs">
-              <span class="text-blue-600">▶ {{ kpis.in_progress_tasks }} en progreso</span>
-            </div>
-            <div class="flex justify-between text-xs" v-if="kpis.overdue_tasks > 0">
-              <span class="text-red-500">⚠ {{ kpis.overdue_tasks }} vencidas</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Timeline -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4">
-          <p class="text-xs text-muted-foreground mb-2">Cronograma</p>
-          <p class="text-sm font-medium break-words">{{ fmtDate(kpis.start_date) }}</p>
-          <p class="text-xs text-muted-foreground mt-0.5 break-words">→ {{ fmtDate(kpis.end_date) }}</p>
-          <div class="mt-3">
-            <ProgressBar
-              :value="kpis.total_days > 0 ? (kpis.days_elapsed / kpis.total_days) * 100 : 0"
-              color="#F59E0B"
-              :height="6"
-              :show-percent="false"
+        <!-- KPI Cards row -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <!-- Progress -->
+          <div class="col-span-2 sm:col-span-1 bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 flex flex-col items-center justify-center gap-2">
+            <CircularProgress
+              :value="kpis.progress_percentage"
+              :size="72"
+              color="#3B82F6"
+              label="Avance"
             />
-            <p class="text-xs text-muted-foreground mt-1">{{ kpis.days_remaining }} días restantes</p>
+          </div>
+
+          <!-- Tasks -->
+          <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 min-w-0">
+            <p class="text-xs text-muted-foreground mb-2">Tareas</p>
+            <p class="text-2xl font-bold">{{ kpis.total_tasks }}</p>
+            <div class="mt-2 space-y-1">
+              <p class="text-xs text-green-600">✓ {{ kpis.completed_tasks }} completadas</p>
+              <p class="text-xs text-blue-600">▶ {{ kpis.in_progress_tasks }} en progreso</p>
+              <p v-if="kpis.overdue_tasks > 0" class="text-xs text-red-500">⚠ {{ kpis.overdue_tasks }} vencidas</p>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 min-w-0">
+            <p class="text-xs text-muted-foreground mb-2">Cronograma</p>
+            <p class="text-xs font-medium">{{ fmtDate(kpis.start_date) }}</p>
+            <p class="text-xs text-muted-foreground mt-0.5">→ {{ fmtDate(kpis.end_date) }}</p>
+            <div class="mt-3">
+              <ProgressBar
+                :value="kpis.total_days > 0 ? (kpis.days_elapsed / kpis.total_days) * 100 : 0"
+                color="#F59E0B"
+                :height="6"
+                :show-percent="false"
+              />
+              <p class="text-xs text-muted-foreground mt-1">{{ kpis.days_remaining }} días restantes</p>
+            </div>
+          </div>
+
+          <!-- Team -->
+          <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 min-w-0">
+            <p class="text-xs text-muted-foreground mb-2">Equipo</p>
+            <p class="text-2xl font-bold">{{ kpis.team_size }}</p>
+            <p class="text-xs text-muted-foreground mt-1">personas asignadas</p>
+            <p v-if="kpis.blocked_tasks > 0" class="text-xs text-red-500 mt-2">
+              {{ kpis.blocked_tasks }} tarea{{ kpis.blocked_tasks !== 1 ? 's' : '' }} bloqueada{{ kpis.blocked_tasks !== 1 ? 's' : '' }}
+            </p>
+          </div>
+
+          <!-- Budget -->
+          <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 min-w-0">
+            <p class="text-xs text-muted-foreground mb-2">Presupuesto</p>
+            <p class="text-sm font-bold leading-tight break-all">{{ budgetFormatted }}</p>
+            <p class="text-xs text-muted-foreground mt-1">presupuesto total</p>
           </div>
         </div>
 
-        <!-- Team -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4">
-          <p class="text-xs text-muted-foreground mb-2">Equipo</p>
-          <p class="text-2xl font-bold">{{ kpis.team_size }}</p>
-          <p class="text-xs text-muted-foreground mt-1">personas asignadas</p>
-          <p v-if="kpis.blocked_tasks > 0" class="text-xs text-red-500 mt-2">
-            {{ kpis.blocked_tasks }} tarea{{ kpis.blocked_tasks !== 1 ? 's' : '' }} bloqueada{{ kpis.blocked_tasks !== 1 ? 's' : '' }}
-          </p>
-        </div>
+        <!-- Charts row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Donut: task status -->
+          <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5 min-w-0">
+            <h3 class="text-sm font-semibold mb-4">Estado de Tareas</h3>
+            <DonutChart
+              :labels="taskDonutLabels"
+              :values="taskDonutValues"
+              :colors="taskDonutColors"
+              :height="200"
+            />
+          </div>
 
-        <!-- Budget -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4">
-          <p class="text-xs text-muted-foreground mb-2">Presupuesto</p>
-          <p class="text-lg font-bold leading-tight">{{ budgetFormatted }}</p>
-          <p class="text-xs text-muted-foreground mt-1">presupuesto total</p>
-        </div>
-      </div>
-
-      <!-- Charts row -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Donut: task status -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
-          <h3 class="text-sm font-semibold mb-4">Estado de Tareas</h3>
-          <DonutChart
-            :labels="taskDonutLabels"
-            :values="taskDonutValues"
-            :colors="taskDonutColors"
-            :height="220"
-          />
-        </div>
-
-        <!-- Bar: team performance -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
-          <h3 class="text-sm font-semibold mb-4">Tareas por Miembro del Equipo</h3>
-          <div class="overflow-x-auto">
+          <!-- Bar: team performance -->
+          <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5 min-w-0">
+            <h3 class="text-sm font-semibold mb-4">Tareas por Miembro</h3>
             <BarChart
               v-if="teamBarLabels.length > 0"
               :labels="teamBarLabels"
               :datasets="teamBarDatasets"
-              :height="220"
+              :height="200"
               :stacked="true"
             />
             <p v-else class="text-sm text-muted-foreground text-center py-8">Sin miembros asignados</p>
           </div>
         </div>
-      </div>
 
-      <!-- Team performance table -->
-      <div v-if="empPerf && empPerf.members.length > 0" class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
-        <h3 class="text-sm font-semibold mb-4">Desempeño del Equipo</h3>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b dark:border-gray-700 text-muted-foreground text-xs">
-                <th class="text-left pb-3 pr-4 font-medium">Empleado</th>
-                <th class="text-left pb-3 pr-4 font-medium">Cargo</th>
-                <th class="text-center pb-3 pr-4 font-medium">Tareas</th>
-                <th class="text-center pb-3 pr-4 font-medium">Completadas</th>
-                <th class="text-left pb-3 font-medium w-32">Avance</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="m in empPerf.members"
-                :key="m.employee_id"
-                class="border-b dark:border-gray-800 last:border-0"
-              >
-                <td class="py-3 pr-4 font-medium">{{ m.employee_name }}</td>
-                <td class="py-3 pr-4 text-muted-foreground text-xs">{{ m.position }}</td>
-                <td class="py-3 pr-4 text-center">{{ m.total_tasks }}</td>
-                <td class="py-3 pr-4 text-center text-green-600">{{ m.completed_tasks }}</td>
-                <td class="py-3 w-36">
-                  <div class="flex items-center gap-2">
-                    <ProgressBar
-                      :value="m.completion_rate"
-                      :show-percent="false"
-                      :height="6"
-                      color="#003C68"
-                      class="flex-1"
-                    />
-                    <span class="text-xs text-muted-foreground w-8 text-right">{{ m.completion_rate.toFixed(0) }}%</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Team performance table -->
+        <div v-if="empPerf && empPerf.members.length > 0" class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
+          <h3 class="text-sm font-semibold mb-4">Desempeño del Equipo</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm min-w-[400px]">
+              <thead>
+                <tr class="border-b dark:border-gray-700 text-muted-foreground text-xs">
+                  <th class="text-left pb-3 pr-4 font-medium">Empleado</th>
+                  <th class="text-left pb-3 pr-4 font-medium hidden sm:table-cell">Cargo</th>
+                  <th class="text-center pb-3 pr-4 font-medium">Tareas</th>
+                  <th class="text-center pb-3 pr-4 font-medium">Completadas</th>
+                  <th class="text-left pb-3 font-medium w-28">Avance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="m in empPerf.members"
+                  :key="m.employee_id"
+                  class="border-b dark:border-gray-800 last:border-0"
+                >
+                  <td class="py-3 pr-4 font-medium">{{ m.employee_name }}</td>
+                  <td class="py-3 pr-4 text-muted-foreground text-xs hidden sm:table-cell">{{ m.position }}</td>
+                  <td class="py-3 pr-4 text-center">{{ m.total_tasks }}</td>
+                  <td class="py-3 pr-4 text-center text-green-600">{{ m.completed_tasks }}</td>
+                  <td class="py-3 w-28">
+                    <div class="flex items-center gap-2">
+                      <ProgressBar
+                        :value="m.completion_rate"
+                        :show-percent="false"
+                        :height="6"
+                        color="#003C68"
+                        class="flex-1"
+                      />
+                      <span class="text-xs text-muted-foreground w-8 text-right">{{ m.completion_rate.toFixed(0) }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <!-- Gantt (RF23) -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold">Cronograma de Tareas (Gantt)</h3>
-          <button
-            @click="exportGanttImage"
-            :disabled="exportingGantt || ganttTasks.length === 0"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium border rounded-lg disabled:opacity-40 transition-colors hover:bg-muted/50"
-          >
-            <UIcon
-              :name="exportingGantt ? 'i-lucide-loader-2' : 'i-lucide-image-down'"
-              class="w-3.5 h-3.5"
-              :class="{ 'animate-spin': exportingGantt }"
+        <!-- Gantt (RF23) -->
+        <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
+          <div class="flex items-center justify-between mb-4 gap-2">
+            <h3 class="text-sm font-semibold">Cronograma (Gantt)</h3>
+            <button
+              @click="exportGanttImage"
+              :disabled="exportingGantt || ganttTasks.length === 0"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-lg disabled:opacity-40 transition-colors hover:bg-muted/50 flex-shrink-0"
+            >
+              <UIcon
+                :name="exportingGantt ? 'i-lucide-loader-2' : 'i-lucide-image-down'"
+                class="w-3.5 h-3.5"
+                :class="{ 'animate-spin': exportingGantt }"
+              />
+              <span class="hidden sm:inline">{{ exportingGantt ? 'Exportando...' : 'Exportar imagen' }}</span>
+            </button>
+          </div>
+          <div ref="ganttRef" class="overflow-x-auto">
+            <GanttChart
+              :tasks="ganttTasks"
+              :project-start="kpis.start_date ?? undefined"
+              :project-end="kpis.end_date ?? undefined"
             />
-            {{ exportingGantt ? 'Exportando...' : 'Exportar imagen' }}
-          </button>
+          </div>
         </div>
-        <div ref="ganttRef" class="overflow-x-auto">
-          <GanttChart
-            :tasks="ganttTasks"
-            :project-start="kpis.start_date ?? undefined"
-            :project-end="kpis.end_date ?? undefined"
-          />
-        </div>
-      </div>
 
-    </template>
-  </div>
-  </template>
+      </template>
+    </div>
   </UDashboardPanel>
 </template>
