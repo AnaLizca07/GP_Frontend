@@ -192,8 +192,6 @@ import { onMounted, ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 
-definePageMeta({ layout: false })
-
 const router = useRouter()
 
 const isSettingUp = ref(true)
