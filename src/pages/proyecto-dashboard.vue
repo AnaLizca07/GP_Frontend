@@ -184,34 +184,9 @@ function fmtDate(s: string | null | undefined): string {
 <template>
   <UDashboardPanel id="proyecto-dashboard">
     <template #header>
-      <UDashboardNavbar :ui="{ right: 'gap-2' }">
+      <UDashboardNavbar>
         <template #leading>
           <UDashboardSidebarCollapse />
-          <UButton
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            @click="router.push('/proyectos')"
-          />
-          <div class="flex flex-col min-w-0">
-            <div v-if="loading" class="h-5 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <span v-else class="text-base font-bold truncate leading-tight">{{ kpis?.project_name ?? 'Proyecto' }}</span>
-            <span
-              v-if="kpis && !loading"
-              class="inline-block text-xs px-2 py-0.5 rounded-full font-medium w-fit mt-0.5"
-              :class="statusColor[kpis.status] ?? 'bg-gray-100 text-gray-600'"
-            >
-              {{ statusLabel[kpis.status] ?? kpis.status }}
-            </span>
-          </div>
-        </template>
-        <template #right>
-          <ExportPdfButton
-            :url="`/api/projects/${projectId}/report/pdf`"
-            :filename="`proyecto_${projectId}_reporte.pdf`"
-            label="Exportar PDF"
-          />
         </template>
       </UDashboardNavbar>
     </template>
@@ -219,6 +194,35 @@ function fmtDate(s: string | null | undefined): string {
     <!-- Body (default slot) — overflow wrapper stops chart SVGs from expanding the flex item -->
     <div class="w-full overflow-x-hidden">
     <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
+
+      <!-- Back + header -->
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-3">
+          <UButton
+            icon="i-lucide-arrow-left"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="router.push('/proyectos')"
+          />
+          <div>
+            <div v-if="loading" class="h-7 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <h1 v-else class="text-2xl font-bold">{{ kpis?.project_name ?? 'Proyecto' }}</h1>
+            <span
+              v-if="kpis && !loading"
+              class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium"
+              :class="statusColor[kpis.status] ?? 'bg-gray-100 text-gray-600'"
+            >
+              {{ statusLabel[kpis.status] ?? kpis.status }}
+            </span>
+          </div>
+        </div>
+        <ExportPdfButton
+          :url="`/api/projects/${projectId}/report/pdf`"
+          :filename="`proyecto_${projectId}_reporte.pdf`"
+          label="Exportar PDF"
+        />
+      </div>
 
       <!-- Loading skeleton -->
       <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-4">
