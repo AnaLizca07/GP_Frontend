@@ -184,7 +184,7 @@ function fmtDate(s: string | null | undefined): string {
 <template>
   <UDashboardPanel id="proyecto-dashboard">
   <template #body>
-  <div class="p-6 max-w-7xl mx-auto space-y-6">
+  <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
 
     <!-- Back + header -->
     <div class="flex items-start justify-between gap-4 flex-wrap">
@@ -227,9 +227,9 @@ function fmtDate(s: string | null | undefined): string {
     <template v-else-if="kpis">
 
       <!-- KPI Cards row -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Progress -->
-        <div class="col-span-1 bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 flex flex-col items-center justify-center gap-2">
+        <div class="sm:col-span-2 lg:col-span-1 bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4 flex flex-col items-center justify-center gap-2">
           <CircularProgress
             :value="kpis.progress_percentage"
             :size="80"
@@ -258,8 +258,8 @@ function fmtDate(s: string | null | undefined): string {
         <!-- Timeline -->
         <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-4">
           <p class="text-xs text-muted-foreground mb-2">Cronograma</p>
-          <p class="text-sm font-medium">{{ fmtDate(kpis.start_date) }}</p>
-          <p class="text-xs text-muted-foreground mt-0.5">→ {{ fmtDate(kpis.end_date) }}</p>
+          <p class="text-sm font-medium break-words">{{ fmtDate(kpis.start_date) }}</p>
+          <p class="text-xs text-muted-foreground mt-0.5 break-words">→ {{ fmtDate(kpis.end_date) }}</p>
           <div class="mt-3">
             <ProgressBar
               :value="kpis.total_days > 0 ? (kpis.days_elapsed / kpis.total_days) * 100 : 0"
