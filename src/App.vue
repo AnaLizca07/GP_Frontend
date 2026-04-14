@@ -35,6 +35,7 @@ const isAuthPage = computed(() => {
          route.path.startsWith('/register') ||
          route.path.startsWith('/forgot-password') ||
          route.path.startsWith('/change-password') ||
+         route.path.startsWith('/reset-password') ||
          route.path.startsWith('/404') ||
          route.path.startsWith('/unauthorized')
 })
