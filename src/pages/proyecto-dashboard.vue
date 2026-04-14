@@ -182,9 +182,9 @@ function fmtDate(s: string | null | undefined): string {
 </script>
 
 <template>
-  <UDashboardPanel id="proyecto-dashboard">
+  <UDashboardPanel id="proyecto-dashboard" :ui="{ body: 'overflow-x-hidden' }">
   <template #body>
-  <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6">
+  <div class="p-3 sm:p-6 max-w-7xl mx-auto space-y-6 overflow-x-hidden">
 
     <!-- Back + header -->
     <div class="flex items-start justify-between gap-4 flex-wrap">
@@ -233,7 +233,7 @@ function fmtDate(s: string | null | undefined): string {
           <CircularProgress
             :value="kpis.progress_percentage"
             :size="80"
-            color="#003C68"
+            color="#3B82F6"
             label="Avance"
           />
         </div>
@@ -305,14 +305,16 @@ function fmtDate(s: string | null | undefined): string {
         <!-- Bar: team performance -->
         <div class="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-700 p-5">
           <h3 class="text-sm font-semibold mb-4">Tareas por Miembro del Equipo</h3>
-          <BarChart
-            v-if="teamBarLabels.length > 0"
-            :labels="teamBarLabels"
-            :datasets="teamBarDatasets"
-            :height="220"
-            :stacked="true"
-          />
-          <p v-else class="text-sm text-muted-foreground text-center py-8">Sin miembros asignados</p>
+          <div class="overflow-x-auto">
+            <BarChart
+              v-if="teamBarLabels.length > 0"
+              :labels="teamBarLabels"
+              :datasets="teamBarDatasets"
+              :height="220"
+              :stacked="true"
+            />
+            <p v-else class="text-sm text-muted-foreground text-center py-8">Sin miembros asignados</p>
+          </div>
         </div>
       </div>
 
@@ -375,7 +377,7 @@ function fmtDate(s: string | null | undefined): string {
             {{ exportingGantt ? 'Exportando...' : 'Exportar imagen' }}
           </button>
         </div>
-        <div ref="ganttRef">
+        <div ref="ganttRef" class="overflow-x-auto">
           <GanttChart
             :tasks="ganttTasks"
             :project-start="kpis.start_date ?? undefined"

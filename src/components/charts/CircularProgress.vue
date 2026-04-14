@@ -24,7 +24,7 @@ const offset = computed(() =>
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-1">
+  <div class="flex flex-col items-center gap-1 text-foreground">
     <svg :width="size" :height="size">
       <!-- Track -->
       <circle
@@ -58,7 +58,7 @@ const offset = computed(() =>
         dominant-baseline="middle"
         :font-size="size * 0.2"
         font-weight="bold"
-        :fill="color"
+        fill="currentColor"
       >
         {{ Math.round(value) }}%
       </text>
