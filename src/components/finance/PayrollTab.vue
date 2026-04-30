@@ -260,23 +260,48 @@
                 {{ processForm.selectedEmployees.length === employees.length && employees.length > 0 ? 'Deseleccionar todos' : 'Seleccionar todos' }}
               </button>
             </div>
-            <div class="space-y-3 max-h-52 overflow-y-auto border border-slate-600 rounded-lg p-4 bg-slate-800">
+            <div class="space-y-2 max-h-64 overflow-y-auto border border-slate-600 rounded-lg p-4 bg-slate-800">
               <div v-if="employees.length === 0" class="text-slate-400 text-sm text-center py-2">
                 No hay empleados activos
               </div>
-              <div v-for="emp in employees" :key="emp.id" class="flex items-center gap-3">
+              <div v-for="emp in employees" :key="emp.id" class="flex items-center gap-3 py-1.5 border-b border-slate-700/50 last:border-0">
                 <input
                   :id="`emp-${emp.id}`"
-                  v-model="processForm.selectedEmployees"
-                  :value="emp.id"
                   type="checkbox"
-                  class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500"
+                  :checked="isSelected(emp.id)"
+                  @change="toggleEmployee(emp.id)"
+                  class="w-4 h-4 text-blue-600 bg-slate-700 border-slate-500 rounded focus:ring-blue-500 shrink-0"
                 />
-                <label :for="`emp-${emp.id}`" class="flex-1 text-sm text-slate-300 cursor-pointer flex items-center gap-2">
-                  <span class="font-medium text-white">{{ emp.name }}</span>
-                  <span class="text-slate-400">— {{ emp.position }}</span>
-                  <span class="ml-auto text-slate-500 text-xs">{{ formatCOP(emp.salary_monthly || emp.salary_biweekly || 0) }}</span>
+                <label :for="`emp-${emp.id}`" class="flex-1 min-w-0 text-sm cursor-pointer">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-medium text-white">{{ emp.name }}</span>
+                    <span class="text-slate-400 text-xs">{{ emp.position }}</span>
+                    <span class="ml-auto text-slate-500 text-xs shrink-0">{{ formatCOP(emp.salary_monthly || emp.salary_biweekly || 0) }}</span>
+                  </div>
                 </label>
+                <!-- Tipo de contrato (solo visible si está seleccionado) -->
+                <div v-if="isSelected(emp.id)" class="flex gap-1 shrink-0">
+                  <button
+                    type="button"
+                    @click="setEmployeeType(emp.id, 'employee')"
+                    :class="[
+                      'px-2 py-1 text-xs rounded font-medium transition-colors',
+                      getEmployeeType(emp.id) === 'employee'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                    ]"
+                  >Empleado</button>
+                  <button
+                    type="button"
+                    @click="setEmployeeType(emp.id, 'contractor')"
+                    :class="[
+                      'px-2 py-1 text-xs rounded font-medium transition-colors',
+                      getEmployeeType(emp.id) === 'contractor'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
+                    ]"
+                  >Contratista</button>
+                </div>
               </div>
             </div>
           </div>
@@ -349,8 +374,15 @@
                   <tr v-for="calc in previewResults" :key="calc.employee_id" class="hover:bg-slate-800/40">
                     <td class="px-4 py-3">
                       <div class="font-medium text-white">{{ calc.employee_name }}</div>
-                      <div class="text-xs text-slate-400 mt-0.5">
-                        {{ calc.employee_type === 'employee' ? 'Empleado' : 'Contratista' }}
+                      <div class="mt-0.5">
+                        <span :class="[
+                          'text-xs font-medium px-1.5 py-0.5 rounded',
+                          calc.employee_type === 'employee'
+                            ? 'bg-blue-900/40 text-blue-300'
+                            : 'bg-purple-900/40 text-purple-300'
+                        ]">
+                          {{ calc.employee_type === 'employee' ? 'Empleado' : 'Contratista' }}
+                        </span>
                       </div>
                     </td>
                     <td class="px-4 py-3 text-right text-slate-300">{{ formatCOP(calc.gross_income) }}</td>
@@ -388,6 +420,7 @@
           <div class="flex items-center justify-between">
             <div class="text-sm text-slate-400">
               <span v-if="step === 1">{{ processForm.selectedEmployees.length }} empleado(s) seleccionado(s)</span>
+
               <span v-else-if="!loadingPreview">
                 {{ formatDate(processForm.periodStart) }} – {{ formatDate(processForm.periodEnd) }}
               </span>
@@ -609,7 +642,7 @@ const toggleSelectAll = () => {
   if (processForm.value.selectedEmployees.length === employees.value.length) {
     processForm.value.selectedEmployees = []
   } else {
-    processForm.value.selectedEmployees = employees.value.map(e => e.id)
+    processForm.value.selectedEmployees = employees.value.map(e => ({ id: e.id, type: 'employee' as const }))
   }
 }
 
@@ -623,11 +656,16 @@ const loadingPreview = ref(false)
 const previewResults = ref<PayrollCalculation[]>([])
 const previewErrors = ref<string[]>([])
 
+interface SelectedEmployee {
+  id: number
+  type: 'employee' | 'contractor'
+}
+
 const processForm = ref({
   payPeriod: 'monthly' as 'biweekly' | 'monthly',
   periodStart: '',
   periodEnd: '',
-  selectedEmployees: [] as number[],
+  selectedEmployees: [] as SelectedEmployee[],
 })
 
 const isStep1Valid = computed(() =>
@@ -635,6 +673,24 @@ const isStep1Valid = computed(() =>
   !!processForm.value.periodEnd &&
   processForm.value.selectedEmployees.length > 0
 )
+
+// ─── Helpers selección de empleados ────────────────────────────────────────
+const isSelected = (empId: number) => processForm.value.selectedEmployees.some(e => e.id === empId)
+const getEmployeeType = (empId: number): 'employee' | 'contractor' => {
+  return processForm.value.selectedEmployees.find(e => e.id === empId)?.type ?? 'employee'
+}
+const toggleEmployee = (empId: number) => {
+  const idx = processForm.value.selectedEmployees.findIndex(e => e.id === empId)
+  if (idx >= 0) {
+    processForm.value.selectedEmployees.splice(idx, 1)
+  } else {
+    processForm.value.selectedEmployees.push({ id: empId, type: 'employee' })
+  }
+}
+const setEmployeeType = (empId: number, type: 'employee' | 'contractor') => {
+  const entry = processForm.value.selectedEmployees.find(e => e.id === empId)
+  if (entry) entry.type = type
+}
 
 const previewTotals = computed(() => ({
   gross:      previewResults.value.reduce((s, c) => s + c.gross_income, 0),
@@ -656,7 +712,7 @@ const openProcessModal = () => {
 const closeProcessModal = () => {
   showProcessModal.value = false
   step.value = 1
-  processForm.value = { payPeriod: 'monthly', periodStart: '', periodEnd: '', selectedEmployees: [] }
+  processForm.value = { payPeriod: 'monthly', periodStart: '', periodEnd: '', selectedEmployees: [] as SelectedEmployee[] }
   processErrors.value = []
   previewResults.value = []
   previewErrors.value = []
@@ -676,18 +732,19 @@ const goToPreview = async () => {
   previewResults.value = []
   previewErrors.value = []
 
-  for (const empId of processForm.value.selectedEmployees) {
+  for (const sel of processForm.value.selectedEmployees) {
     try {
       const calc = await payrollService.calculatePayroll({
-        employee_id: empId,
+        employee_id: sel.id,
         pay_period: processForm.value.payPeriod,
         period_start: processForm.value.periodStart,
         period_end: processForm.value.periodEnd,
+        employee_type: sel.type,
       })
       previewResults.value.push(calc)
     } catch (e: any) {
-      const emp = employees.value.find(em => em.id === empId)
-      const name = emp?.name ?? `Empleado #${empId}`
+      const emp = employees.value.find(em => em.id === sel.id)
+      const name = emp?.name ?? `Empleado #${sel.id}`
       previewErrors.value.push(`${name}: ${e?.response?.data?.detail ?? 'Error de cálculo'}`)
     }
   }
@@ -703,18 +760,19 @@ const submitProcessPayroll = async () => {
   const errors: string[] = []
   const newRecords: PayrollRecord[] = []
 
-  for (const empId of processForm.value.selectedEmployees) {
+  for (const sel of processForm.value.selectedEmployees) {
     try {
       const record = await payrollService.processPayroll({
-        employee_id: empId,
+        employee_id: sel.id,
         pay_period: processForm.value.payPeriod,
         period_start: processForm.value.periodStart,
         period_end: processForm.value.periodEnd,
+        employee_type: sel.type,
       })
       newRecords.push(record)
     } catch (e: any) {
-      const emp = employees.value.find(em => em.id === empId)
-      const name = emp?.name ?? `Empleado #${empId}`
+      const emp = employees.value.find(em => em.id === sel.id)
+      const name = emp?.name ?? `Empleado #${sel.id}`
       errors.push(`${name}: ${e?.response?.data?.detail ?? 'Error desconocido'}`)
     }
   }
