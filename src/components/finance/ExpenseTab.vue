@@ -249,6 +249,19 @@
           </form>
         </div>
 
+        <!-- Insufficient funds warning -->
+        <div
+          v-if="insufficientFunds"
+          class="mx-6 mb-2 flex items-start gap-2 p-3 rounded-lg bg-amber-900/30 border border-amber-600/50"
+        >
+          <UIcon name="i-lucide-triangle-alert" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div class="text-xs text-amber-300">
+            <span class="font-semibold">Fondos insuficientes.</span>
+            El egreso de <strong>{{ formatCOP(expenseForm.amount!) }}</strong> supera el saldo disponible de
+            <strong>{{ formatCOP(currentBalance) }}</strong>. Puedes continuar, pero quedarás en números rojos.
+          </div>
+        </div>
+
         <!-- Modal Footer -->
         <div class="px-6 py-4 border-t border-slate-700 bg-slate-800/50">
           <div class="flex items-center justify-end gap-3">
@@ -282,6 +295,17 @@ import { ref, computed, onMounted } from 'vue'
 import financeService, { type Transaction } from '@/services/finance'
 import projectsService from '@/services/projects'
 import { formatCOP } from '@/utils'
+
+// ─── Balance actual ─────────────────────────────────────────────────────────
+const currentBalance = ref(0)
+const fetchBalance = async () => {
+  try {
+    const summary = await financeService.getSummary()
+    currentBalance.value = summary.balance
+  } catch (e) {
+    console.error('Error cargando saldo:', e)
+  }
+}
 
 // ─── Proyectos ─────────────────────────────────────────────────────────────
 const projects = ref<{ id: number; name: string }[]>([])
@@ -318,7 +342,7 @@ const fetchTransactions = async () => {
   }
 }
 
-onMounted(() => { fetchTransactions(); fetchProjects() })
+onMounted(() => { fetchTransactions(); fetchProjects(); fetchBalance() })
 
 // ─── Formateo ──────────────────────────────────────────────────────────────
 
@@ -394,6 +418,12 @@ const isExpenseFormValid = computed(() =>
   !!expenseForm.value.projectId
 )
 
+const insufficientFunds = computed(() =>
+  !!expenseForm.value.amount &&
+  expenseForm.value.amount > 0 &&
+  expenseForm.value.amount > currentBalance.value
+)
+
 const openExpenseModal = () => { expenseModalOpen.value = true }
 
 const closeExpenseModal = () => {
@@ -418,6 +448,7 @@ const submitExpense = async () => {
       project_id: expenseForm.value.projectId ?? undefined,
     })
     transactions.value.unshift(created)
+    currentBalance.value = Math.max(0, currentBalance.value - created.amount)
     closeExpenseModal()
   } catch (e: any) {
     console.error('Error guardando egreso:', e)
