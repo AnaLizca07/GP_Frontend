@@ -50,6 +50,7 @@ export interface PayrollCalculationRequest {
   pay_period: 'weekly' | 'biweekly' | 'monthly'
   period_start: string
   period_end: string
+  employee_type?: 'employee' | 'contractor'
   worked_hours?: number
   base_salary?: number
   additional_income?: number
@@ -178,6 +179,7 @@ export const payrollService = {
     pay_period: 'weekly' | 'biweekly' | 'monthly'
     period_start: string
     period_end: string
+    employee_type?: 'employee' | 'contractor'
     project_id?: number
   }): Promise<PayrollRecord> {
     const { data } = await api.post('/api/payroll/process', request)
