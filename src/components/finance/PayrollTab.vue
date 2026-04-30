@@ -310,6 +310,20 @@
               </div>
             </div>
 
+            <!-- Insufficient funds warning -->
+            <div
+              v-if="!loadingPreview && previewTotals.total > currentBalance"
+              class="flex items-start gap-2 p-3 rounded-lg bg-amber-900/30 border border-amber-600/50"
+            >
+              <UIcon name="i-lucide-triangle-alert" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div class="text-xs text-amber-300">
+                <span class="font-semibold">Fondos insuficientes.</span>
+                El costo total de la nómina (<strong>{{ formatCOP(previewTotals.total) }}</strong>)
+                supera el saldo disponible de <strong>{{ formatCOP(currentBalance) }}</strong>.
+                Puedes continuar, pero quedarás en números rojos.
+              </div>
+            </div>
+
             <!-- Preview errors -->
             <div v-if="previewErrors.length > 0" class="p-3 bg-yellow-900/20 border border-yellow-700 rounded-lg">
               <p class="text-yellow-400 text-xs font-medium mb-1">Empleados que no se pudieron calcular:</p>
@@ -424,7 +438,19 @@
 import { ref, computed, onMounted } from 'vue'
 import { payrollService, type PayrollRecord, type PayrollCalculation } from '@/services/payroll'
 import { employeeService, type Employee } from '@/services/employees'
+import financeService from '@/services/finance'
 import { formatCOP } from '@/utils'
+
+// ─── Balance actual ─────────────────────────────────────────────────────────
+const currentBalance = ref(0)
+const fetchBalance = async () => {
+  try {
+    const summary = await financeService.getSummary()
+    currentBalance.value = summary.balance
+  } catch (e) {
+    console.error('Error cargando saldo:', e)
+  }
+}
 
 // ─── Estado: registros ─────────────────────────────────────────────────────
 const payrollRecords = ref<PayrollRecord[]>([])
@@ -482,6 +508,7 @@ const fetchEmployees = async () => {
 onMounted(() => {
   fetchRecords()
   fetchEmployees()
+  fetchBalance()
 })
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
