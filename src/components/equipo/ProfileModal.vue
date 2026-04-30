@@ -90,11 +90,11 @@ const formatDateTime = (iso: string) =>
           </div>
 
           <!-- Contact & Salary grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div class="grid gap-3 mb-4" :class="readonly ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'">
             <UCard class="p-4">
               <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Contacto</h3>
               <div class="space-y-2">
-                <div v-if="member.identification" class="flex items-center gap-2 text-sm">
+                <div v-if="!readonly && member.identification" class="flex items-center gap-2 text-sm">
                   <UIcon name="i-lucide-credit-card" class="w-4 h-4 text-muted-foreground shrink-0" />
                   <span class="text-muted-foreground">CC</span>
                   <span class="font-medium">{{ member.identification }}</span>
@@ -103,11 +103,11 @@ const formatDateTime = (iso: string) =>
                   <UIcon name="i-lucide-phone" class="w-4 h-4 text-muted-foreground shrink-0" />
                   <span class="font-medium">{{ member.telefono }}</span>
                 </div>
-                <p v-if="!member.identification && !member.telefono" class="text-xs text-muted-foreground">Sin datos de contacto</p>
+                <p v-if="(readonly ? !member.telefono : !member.identification && !member.telefono)" class="text-xs text-muted-foreground">Sin datos de contacto</p>
               </div>
             </UCard>
 
-            <UCard class="p-4">
+            <UCard v-if="!readonly" class="p-4">
               <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Salario</h3>
               <div v-if="salaryRows(member).length > 0" class="space-y-1.5">
                 <div v-for="row in salaryRows(member)" :key="row.label" class="flex items-center justify-between text-sm">
@@ -123,8 +123,8 @@ const formatDateTime = (iso: string) =>
             </UCard>
           </div>
 
-          <!-- Resume -->
-          <UCard class="p-4 mb-4">
+          <!-- Resume (solo visible para managers) -->
+          <UCard v-if="!readonly" class="p-4 mb-4">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Hoja de vida</h3>
               <UBadge

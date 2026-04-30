@@ -39,16 +39,7 @@ const loadingDetail = ref(false)
 const showDetail = ref(false)
 const ratings = ref<EmployeeRating[]>([])
 const loadingRatings = ref(false)
-
-// Comprobantes de pago
-const receipts = ref<Array<{
-  id: number
-  period_start: string
-  period_end: string
-  net_pay: number
-  receipt_url: string | null
-  paid_at: string | null
-}>>([])
+const receipts = ref<Array<{ id: number; period_start: string; period_end: string; net_pay: number; receipt_url: string | null; paid_at: string | null; status: string }>>([])
 const loadingReceipts = ref(false)
 
 // ─── Load projects ────────────────────────────────────────────────────────
@@ -353,17 +344,27 @@ function completionColor(rate: number): string {
                 <!-- Métricas -->
                 <div class="grid grid-cols-3 gap-2">
                   <div class="p-3 rounded-lg bg-muted/30 text-center">
-                    <p class="text-xs text-muted-foreground mb-1">Total</p>
+                    <p class="text-xs text-muted-foreground mb-1">Presupuesto</p>
                     <p class="text-xs font-bold truncate">{{ formatCOP(budgetSummary.total_budget) }}</p>
                   </div>
+                  <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                    <p class="text-xs text-muted-foreground mb-1">Ingresos</p>
+                    <p class="text-xs font-bold text-blue-600 dark:text-blue-400 truncate">{{ formatCOP(budgetSummary.income) }}</p>
+                  </div>
                   <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-center">
-                    <p class="text-xs text-muted-foreground mb-1">Gastado</p>
+                    <p class="text-xs text-muted-foreground mb-1">Egresos</p>
                     <p class="text-xs font-bold text-red-600 dark:text-red-400 truncate">{{ formatCOP(budgetSummary.spent) }}</p>
                   </div>
-                  <div class="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
-                    <p class="text-xs text-muted-foreground mb-1">Disponible</p>
-                    <p class="text-xs font-bold text-green-600 dark:text-green-400 truncate">{{ formatCOP(budgetSummary.remaining) }}</p>
-                  </div>
+                </div>
+                <!-- Saldo real -->
+                <div class="flex items-center justify-between text-xs border-t border-default pt-2 mt-2">
+                  <span class="text-muted-foreground flex items-center gap-1">
+                    <UIcon name="i-lucide-wallet" class="w-3.5 h-3.5" :class="budgetSummary.available_balance >= 0 ? 'text-green-500' : 'text-red-500'" />
+                    Saldo disponible
+                  </span>
+                  <span class="font-bold" :class="budgetSummary.available_balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                    {{ formatCOP(budgetSummary.available_balance) }}
+                  </span>
                 </div>
               </div>
             </UCard>
@@ -609,6 +610,52 @@ function completionColor(rate: number): string {
           <p class="text-sm text-muted-foreground">No se pudo cargar la información del empleado</p>
         </div>
 
+        <!-- Comprobantes de Pago -->
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <UIcon name="i-lucide-file-text" class="w-4 h-4 text-primary" />
+            <p class="text-sm font-semibold">Comprobantes de Pago</p>
+          </div>
+
+          <div v-if="loadingReceipts" class="space-y-2">
+            <USkeleton v-for="i in 3" :key="i" class="h-12 rounded-lg" />
+          </div>
+
+          <div v-else-if="receipts.length === 0" class="text-center py-6 rounded-lg border border-dashed border-default">
+            <UIcon name="i-lucide-file-x" class="w-6 h-6 text-muted-foreground mx-auto mb-1 opacity-30" />
+            <p class="text-xs text-muted-foreground">Sin comprobantes registrados aún</p>
+          </div>
+
+          <div v-else class="space-y-2">
+            <div
+              v-for="receipt in receipts"
+              :key="receipt.id"
+              class="flex items-center justify-between gap-3 p-3 rounded-lg border border-default bg-elevated/30"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-medium">
+                  {{ formatDate(receipt.period_start) }} — {{ formatDate(receipt.period_end) }}
+                </p>
+                <p class="text-xs text-muted-foreground mt-0.5">
+                  Neto: <span class="font-semibold text-foreground">{{ formatCOP(receipt.net_pay) }}</span>
+                </p>
+              </div>
+              <UButton
+                v-if="receipt.receipt_url"
+                :to="receipt.receipt_url"
+                target="_blank"
+                color="primary"
+                variant="ghost"
+                size="xs"
+                icon="i-lucide-download"
+              >
+                PDF
+              </UButton>
+              <UBadge v-else color="neutral" variant="subtle" size="xs">Sin PDF</UBadge>
+            </div>
+          </div>
+        </div>
+
         <!-- Historial de calificaciones -->
         <div>
           <div class="flex items-center gap-2 mb-3">
@@ -647,61 +694,6 @@ function completionColor(rate: number): string {
               <!-- Comentario -->
               <p v-if="r.comment" class="text-xs text-foreground leading-relaxed">{{ r.comment }}</p>
               <p v-else class="text-xs text-muted-foreground italic">Sin comentario</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Comprobantes de pago -->
-        <div>
-          <div class="flex items-center gap-2 mb-3">
-            <UIcon name="i-lucide-file-check" class="w-4 h-4 text-green-500" />
-            <p class="text-sm font-semibold">Comprobantes de Pago</p>
-          </div>
-
-          <div v-if="loadingReceipts" class="space-y-2">
-            <USkeleton v-for="i in 2" :key="i" class="h-14 rounded-lg" />
-          </div>
-
-          <div v-else-if="receipts.length === 0" class="text-center py-6 rounded-lg border border-dashed border-default">
-            <UIcon name="i-lucide-file-x" class="w-6 h-6 text-muted-foreground mx-auto mb-1 opacity-30" />
-            <p class="text-xs text-muted-foreground">Sin comprobantes registrados aún</p>
-          </div>
-
-          <div v-else class="space-y-2">
-            <div
-              v-for="rec in receipts"
-              :key="rec.id"
-              class="p-3 rounded-lg border border-default bg-elevated/30"
-            >
-              <!-- Período + neto -->
-              <div class="flex items-center justify-between mb-1">
-                <div class="flex items-center gap-1.5">
-                  <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span class="text-xs font-medium">
-                    {{ formatDate(rec.period_start) }} — {{ formatDate(rec.period_end) }}
-                  </span>
-                </div>
-                <span class="text-xs font-semibold text-green-600 dark:text-green-400">
-                  {{ formatCOP(rec.net_pay) }}
-                </span>
-              </div>
-              <!-- Fecha de pago + enlace -->
-              <div class="flex items-center justify-between mt-1.5">
-                <span class="text-xs text-muted-foreground">
-                  Pagado: {{ rec.paid_at ? formatDateTime(rec.paid_at) : '—' }}
-                </span>
-                <a
-                  v-if="rec.receipt_url"
-                  :href="rec.receipt_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  <UIcon name="i-lucide-download" class="w-3.5 h-3.5" />
-                  Ver PDF
-                </a>
-                <span v-else class="text-xs text-muted-foreground italic">Sin PDF</span>
-              </div>
             </div>
           </div>
         </div>
