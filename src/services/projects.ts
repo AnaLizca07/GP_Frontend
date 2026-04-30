@@ -5,6 +5,8 @@ export interface ProjectEmployee {
   employee_id: number
   employee_name: string
   employee_position?: string
+  employee_phone?: string
+  employee_identification?: string
   dedication_percentage: number
   assigned_at: string
 }

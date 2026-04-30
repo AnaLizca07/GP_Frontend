@@ -58,7 +58,8 @@ export interface BudgetSummary {
   total_budget: number
   spent: number
   income: number
-  remaining: number
+  available_balance: number  // ingresos recibidos - egresos (saldo real)
+  remaining: number          // presupuesto total - egresos (referencia contractual)
   consumed_percentage: number
 }
 

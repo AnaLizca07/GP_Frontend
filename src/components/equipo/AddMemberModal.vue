@@ -38,11 +38,10 @@ const form = ref<NewMemberForm>({
   status: 'active',
 })
 
-const ALLOWED_DOMAINS = ['@cue.edu.co', '@unihumboldt.edu.co']
-
-const isInstitutionalEmail = computed(() =>
-  ALLOWED_DOMAINS.some(d => form.value.email.toLowerCase().endsWith(d))
-)
+// const ALLOWED_DOMAINS = ['@cue.edu.co', '@unihumboldt.edu.co']
+// const isInstitutionalEmail = computed(() =>
+//   ALLOWED_DOMAINS.some(d => form.value.email.toLowerCase().endsWith(d))
+// )
 
 // ─── Touched state ────────────────────────────────────────────────────────────
 const touched = reactive({ email: false, name: false, identification: false, position: false })
@@ -51,7 +50,7 @@ const touched = reactive({ email: false, name: false, identification: false, pos
 const emailError = computed(() => {
   if (!form.value.email) return 'El correo es obligatorio'
   if (!form.value.email.includes('@')) return 'Ingresa un correo válido con @'
-  if (!isInstitutionalEmail.value) return 'Solo correos @cue.edu.co o @unihumboldt.edu.co'
+  // if (!isInstitutionalEmail.value) return 'Solo correos @cue.edu.co o @unihumboldt.edu.co'
   return null
 })
 
@@ -152,7 +151,7 @@ watch(() => props.show, (newShow) => {
               <UInput
                 v-model="form.email"
                 type="email"
-                placeholder="juan.perez@cue.edu.co"
+                placeholder="juan@empresa.com"
                 icon="i-lucide-mail"
                 :color="touched.email && emailError ? 'error' : undefined"
                 @blur="touched.email = true"
@@ -161,9 +160,9 @@ watch(() => props.show, (newShow) => {
                 <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
                 {{ emailError }}
               </p>
-              <p v-else class="text-xs text-muted-foreground mt-1">
+              <!-- <p v-else class="text-xs text-muted-foreground mt-1">
                 Solo correos institucionales (@cue.edu.co o @unihumboldt.edu.co)
-              </p>
+              </p> -->
             </div>
 
             <!-- Name and ID -->

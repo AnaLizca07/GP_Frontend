@@ -41,7 +41,7 @@
             <UInput
               v-model="form.email"
               type="email"
-              placeholder="tu@cue.edu.co"
+              placeholder="tucorreo@ejemplo.com"
               :disabled="isLoading"
               autocomplete="email"
               size="lg"
@@ -52,9 +52,6 @@
             <p v-if="touched.email && emailError" class="text-xs text-red-500 mt-1 flex items-center gap-1">
               <UIcon name="i-lucide-circle-alert" class="w-3 h-3 shrink-0" />
               {{ emailError }}
-            </p>
-            <p v-else-if="!touched.email || !form.email" class="text-xs text-muted-foreground mt-1">
-              Solo correos institucionales (@cue.edu.co o @unihumboldt.edu.co)
             </p>
           </div>
 
@@ -133,10 +130,6 @@ const features = [
   'Reportes y seguimiento de OKRs',
 ]
 
-const INSTITUTIONAL_DOMAINS = ['@cue.edu.co', '@unihumboldt.edu.co']
-const isInstitutional = (email: string) =>
-  INSTITUTIONAL_DOMAINS.some(d => email.toLowerCase().endsWith(d))
-
 const form = reactive<LoginCredentials>({ email: '', password: '' })
 
 // ─── Touched state (mostrar errores solo tras interacción) ────────────────
@@ -146,7 +139,6 @@ const touched = reactive({ email: false, password: false })
 const emailError = computed(() => {
   if (!form.email) return 'El correo es obligatorio'
   if (!form.email.includes('@')) return 'Ingresa un correo válido con @'
-  if (!isInstitutional(form.email)) return 'Solo correos @cue.edu.co o @unihumboldt.edu.co'
   return null
 })
 

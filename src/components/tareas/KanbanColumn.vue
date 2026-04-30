@@ -158,6 +158,7 @@ const handleDrop = (event: DragEvent) => {
         v-for="task in tasks"
         :key="task.id"
         :tarea="task"
+        :is-manager="isManager"
         @toggle-completion="handleToggleCompletion"
         @edit-task="handleEditTask"
         @drag-start="handleDragStart"
