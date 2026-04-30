@@ -15,9 +15,10 @@ interface Props {
     estado: 'Por Hacer' | 'En Progreso' | 'En Revisión' | 'Completada'
     completada: boolean
   }
+  isManager?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { isManager: false })
 
 // Define emits
 const emit = defineEmits<{
@@ -96,6 +97,7 @@ const handleDragEnd = () => {
             size="xs"
           />
           <UButton
+            v-if="isManager"
             icon="i-lucide-more-horizontal"
             size="xs"
             color="neutral"

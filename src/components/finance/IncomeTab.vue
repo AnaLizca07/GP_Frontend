@@ -57,6 +57,7 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Fecha</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Concepto</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Proyecto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Categoría</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Monto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Acciones</th>
@@ -64,19 +65,22 @@
           </thead>
           <tbody class="bg-background divide-y divide-border">
             <tr v-if="loading">
-              <td colspan="5" class="px-6 py-8 text-center text-muted-foreground">
+              <td colspan="6" class="px-6 py-8 text-center text-muted-foreground">
                 <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
                 Cargando ingresos...
               </td>
             </tr>
             <tr v-else-if="transactions.length === 0">
-              <td colspan="5" class="px-6 py-8 text-center text-muted-foreground">
+              <td colspan="6" class="px-6 py-8 text-center text-muted-foreground">
                 No hay ingresos registrados
               </td>
             </tr>
             <tr v-for="item in transactions" :key="item.id" class="hover:bg-muted/50">
               <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatDate(item.transaction_date) }}</td>
               <td class="px-6 py-4 text-sm font-medium">{{ item.description }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                {{ item.project_id ? (projects.find(p => p.id === item.project_id)?.name ?? '—') : '—' }}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
                   {{ item.category || '—' }}
@@ -220,6 +224,21 @@
               </select>
             </div>
 
+            <!-- Project Field -->
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">Proyecto *</label>
+              <select
+                v-model="incomeForm.projectId"
+                :disabled="submittingIncome"
+                class="w-full px-4 py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50"
+              >
+                <option :value="null">Seleccionar proyecto</option>
+                <option v-for="p in projects" :key="p.id" :value="p.id" class="bg-slate-800 text-white">
+                  {{ p.name }}
+                </option>
+              </select>
+            </div>
+
             <!-- Origin Field -->
             <div>
               <label class="block text-sm font-medium text-slate-300 mb-2">Origen *</label>
@@ -265,7 +284,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import financeService, { type Transaction } from '@/services/finance'
+import projectsService from '@/services/projects'
 import { formatCOP } from '@/utils'
+
+// ─── Proyectos ─────────────────────────────────────────────────────────────
+const projects = ref<{ id: number; name: string }[]>([])
+const fetchProjects = async () => {
+  try {
+    const res = await projectsService.getProjects()
+    projects.value = res.projects.map(p => ({ id: p.id, name: p.name }))
+  } catch (e) {
+    console.error('Error cargando proyectos:', e)
+  }
+}
 
 // ─── Estado ────────────────────────────────────────────────────────────────
 const transactions = ref<Transaction[]>([])
@@ -292,7 +323,7 @@ const fetchTransactions = async () => {
   }
 }
 
-onMounted(fetchTransactions)
+onMounted(() => { fetchTransactions(); fetchProjects() })
 
 // ─── Formateo ──────────────────────────────────────────────────────────────
 
@@ -357,6 +388,7 @@ const incomeForm = ref({
   date: '',
   category: '',
   origin: '',
+  projectId: null as number | null,
 })
 
 const isFormValid = computed(() =>
@@ -364,7 +396,8 @@ const isFormValid = computed(() =>
   !!incomeForm.value.amount && incomeForm.value.amount > 0 &&
   !!incomeForm.value.date &&
   !!incomeForm.value.category &&
-  !!incomeForm.value.origin.trim()
+  !!incomeForm.value.origin.trim() &&
+  !!incomeForm.value.projectId
 )
 
 const openIncomeModal = () => {
@@ -373,7 +406,7 @@ const openIncomeModal = () => {
 
 const closeIncomeModal = () => {
   incomeModalOpen.value = false
-  incomeForm.value = { concept: '', amount: null, date: '', category: '', origin: '' }
+  incomeForm.value = { concept: '', amount: null, date: '', category: '', origin: '', projectId: null }
 }
 
 const submitIncome = async () => {
@@ -390,12 +423,14 @@ const submitIncome = async () => {
       category: incomeForm.value.category,
       description,
       transaction_date: incomeForm.value.date,
+      project_id: incomeForm.value.projectId ?? undefined,
     })
     transactions.value.unshift(created)
     closeIncomeModal()
-  } catch (e) {
+  } catch (e: any) {
     console.error('Error guardando ingreso:', e)
-    alert('Error al guardar el ingreso')
+    const msg = e?.response?.data?.detail || 'Error al guardar el ingreso'
+    alert(msg)
   } finally {
     submittingIncome.value = false
   }

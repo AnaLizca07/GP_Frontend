@@ -596,26 +596,28 @@ onMounted(async () => {
           <!-- 3 métricas -->
           <div class="grid grid-cols-3 gap-3">
             <div class="p-3 rounded-lg bg-muted/30 text-center">
-              <p class="text-xs text-muted-foreground mb-1">Presupuesto total</p>
+              <p class="text-xs text-muted-foreground mb-1">Presupuesto</p>
               <p class="text-sm font-bold truncate">{{ formatCOP(budgetSummary.total_budget) }}</p>
             </div>
-            <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-center">
-              <p class="text-xs text-muted-foreground mb-1">Gastado</p>
-              <p class="text-sm font-bold text-red-600 dark:text-red-400 truncate">{{ formatCOP(budgetSummary.spent) }}</p>
+            <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+              <p class="text-xs text-muted-foreground mb-1">Ingresos</p>
+              <p class="text-sm font-bold text-blue-600 dark:text-blue-400 truncate">{{ formatCOP(budgetSummary.income) }}</p>
             </div>
-            <div class="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-center">
-              <p class="text-xs text-muted-foreground mb-1">Disponible</p>
-              <p class="text-sm font-bold text-green-600 dark:text-green-400 truncate">{{ formatCOP(budgetSummary.remaining) }}</p>
+            <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 text-center">
+              <p class="text-xs text-muted-foreground mb-1">Egresos</p>
+              <p class="text-sm font-bold text-red-600 dark:text-red-400 truncate">{{ formatCOP(budgetSummary.spent) }}</p>
             </div>
           </div>
 
-          <!-- Ingresos registrados -->
-          <div v-if="budgetSummary.income > 0" class="flex items-center justify-between text-sm border-t border-default pt-3">
+          <!-- Saldo real disponible -->
+          <div class="flex items-center justify-between text-sm border-t border-default pt-3">
             <span class="text-muted-foreground flex items-center gap-1.5">
-              <UIcon name="i-lucide-trending-up" class="w-4 h-4 text-green-500" />
-              Ingresos registrados
+              <UIcon name="i-lucide-wallet" class="w-4 h-4" :class="budgetSummary.available_balance >= 0 ? 'text-green-500' : 'text-red-500'" />
+              Saldo disponible (ingresos − egresos)
             </span>
-            <span class="font-semibold text-green-600 dark:text-green-400">{{ formatCOP(budgetSummary.income) }}</span>
+            <span class="font-bold" :class="budgetSummary.available_balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+              {{ formatCOP(budgetSummary.available_balance) }}
+            </span>
           </div>
         </div>
       </UCard>
