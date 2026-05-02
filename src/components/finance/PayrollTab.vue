@@ -457,7 +457,7 @@
               >
                 <UIcon v-if="submittingPayroll" name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
                 <UIcon v-else name="i-lucide-check" class="w-4 h-4" />
-                {{ submittingPayroll ? 'Procesando...' : 'Confirmar y procesar' }}
+                {{ submittingPayroll ? submittingPayrollMessage : 'Confirmar y procesar' }}
               </button>
             </div>
           </div>
@@ -753,9 +753,19 @@ const goToPreview = async () => {
 }
 
 // ─── Confirmar y procesar ──────────────────────────────────────────────────
+const submittingPayrollMessage = ref('')
+
 const submitProcessPayroll = async () => {
   submittingPayroll.value = true
+  submittingPayrollMessage.value = 'Procesando...'
   processErrors.value = []
+
+  // Mostrar aviso de espera si el servidor tarda (cold start de Render)
+  const slowTimer = setTimeout(() => {
+    if (submittingPayroll.value) {
+      submittingPayrollMessage.value = 'Esto puede tardar ~40s la primera vez...'
+    }
+  }, 8000)
 
   const errors: string[] = []
   const newRecords: PayrollRecord[] = []
@@ -777,6 +787,7 @@ const submitProcessPayroll = async () => {
     }
   }
 
+  clearTimeout(slowTimer)
   processErrors.value = errors
   if (newRecords.length > 0) {
     await fetchRecords()
@@ -784,5 +795,6 @@ const submitProcessPayroll = async () => {
   }
 
   submittingPayroll.value = false
+  submittingPayrollMessage.value = ''
 }
 </script>

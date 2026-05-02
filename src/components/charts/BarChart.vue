@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<{
   stacked: false,
 })
 
-const PALETTE = ['#003C68', '#0070C0', '#00B0F0', '#92D050', '#FFC000', '#FF4B4B']
+const PALETTE = ['#3B82F6', '#60A5FA', '#7DD3FC', '#6EE7B7', '#FCD34D', '#FCA5A5']
 
 const chartData = computed(() => ({
   labels: props.labels,
