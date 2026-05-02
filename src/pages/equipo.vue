@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useEmployees } from '@/composables/useEmployees'
+import { useSlowLoad } from '@/composables/useSlowLoad'
 import { employeeService } from '@/services/employees'
 import projectsService from '@/services/projects'
 import type { UpdateEmployeeData } from '@/services/employees'
@@ -16,6 +17,7 @@ const authStore = useAuthStore()
 const isManager = computed(() => authStore.isManager)
 
 const { employees, loading, fetchEmployees, createEmployee } = useEmployees()
+const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 
 const miembros = ref<MiembroEquipo[]>([])
 const showAddMemberModal = ref(false)
@@ -103,6 +105,7 @@ const loadColleagues = async (): Promise<MiembroEquipo[]> => {
 }
 
 onMounted(async () => {
+  startTimer()
   try {
     if (isManager.value) {
       await fetchEmployees({ status_filter: 'active' })
@@ -112,6 +115,8 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error loading team members:', error)
+  } finally {
+    clearTimer()
   }
 })
 
@@ -221,8 +226,11 @@ const handleAddMember = async (form: NewMemberForm) => {
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="flex items-center justify-center py-16">
+      <div v-if="loading" class="flex flex-col items-center justify-center py-16 gap-3">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted-foreground" />
+        <p v-if="slowLoad" class="text-sm text-muted-foreground text-center max-w-sm">
+          El servidor está iniciando. En el plan gratuito de hosting puede tardar hasta 40 segundos la primera vez del día.
+        </p>
       </div>
 
       <template v-else>

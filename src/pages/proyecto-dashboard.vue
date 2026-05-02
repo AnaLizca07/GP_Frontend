@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useSlowLoad } from '@/composables/useSlowLoad'
 import kpisService, { type ProjectKpis, type ProjectEmployeePerformance } from '@/services/kpis'
 import projectsService, { type Project } from '@/services/projects'
 import tasksService from '@/services/tasks'
@@ -19,6 +20,7 @@ const projectId = Number(route.params.id)
 
 const loading = ref(true)
 const error = ref<string | null>(null)
+const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 const kpis = ref<ProjectKpis | null>(null)
 const project = ref<Project | null>(null)
 const empPerf = ref<ProjectEmployeePerformance | null>(null)
@@ -27,6 +29,7 @@ const allTasks = ref<any[]>([])
 async function loadData() {
   loading.value = true
   error.value = null
+  startTimer()
   try {
     const [kpisData, projData, perfData, tasksData] = await Promise.all([
       kpisService.getProjectKpis(projectId),
@@ -42,6 +45,7 @@ async function loadData() {
     error.value = 'Error al cargar los datos del proyecto'
     console.error(e)
   } finally {
+    clearTimer()
     loading.value = false
   }
 }
@@ -225,8 +229,13 @@ function fmtDate(s: string | null | undefined): string {
       </div>
 
       <!-- Loading skeleton -->
-      <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div v-for="n in 4" :key="n" class="h-28 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+      <div v-if="loading" class="space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div v-for="n in 4" :key="n" class="h-28 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+        </div>
+        <p v-if="slowLoad" class="text-sm text-muted-foreground text-center">
+          El servidor está iniciando. En el plan gratuito de hosting puede tardar hasta 40 segundos la primera vez del día.
+        </p>
       </div>
 
       <!-- Error -->

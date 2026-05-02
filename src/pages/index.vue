@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSlowLoad } from '@/composables/useSlowLoad'
 import { useEmployees } from '@/composables/useEmployees'
 import { useDashboard } from '../composables/useDashboard'
 import projectsService from '@/services/projects'
@@ -24,6 +25,7 @@ const projectKpis = ref<ProjectKpis | null>(null)
 const budgetSummary = ref<BudgetSummary | null>(null)
 const loadingKpis = ref(false)
 const loadingProjects = ref(true)
+const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 
 const selectedProject = computed(() =>
   projects.value.find(p => p.id === selectedProjectId.value) ?? null
@@ -293,6 +295,7 @@ onMounted(async () => {
   if (authStore.isEmployee) { await $router.push('/empleado'); return }
   if (authStore.isSponsor) { await $router.push('/sponsor'); return }
 
+  startTimer()
   await Promise.all([
     fetchEmployees().then(() => {
       globalKpis.value[1].value = activeEmployees.value.length.toString()
@@ -313,6 +316,7 @@ onMounted(async () => {
     })(),
   ])
 
+  clearTimer()
   loadingProjects.value = false
 })
 </script>
@@ -355,8 +359,13 @@ onMounted(async () => {
           <span class="text-sm font-medium text-muted-foreground">Proyecto</span>
         </div>
 
-        <div v-if="loadingProjects" class="flex gap-2">
-          <USkeleton v-for="i in 4" :key="i" class="h-8 w-28 rounded-lg" />
+        <div v-if="loadingProjects" class="space-y-2">
+          <div class="flex gap-2">
+            <USkeleton v-for="i in 4" :key="i" class="h-8 w-28 rounded-lg" />
+          </div>
+          <p v-if="slowLoad" class="text-xs text-muted-foreground">
+            El servidor está iniciando. En el plan gratuito de hosting puede tardar hasta 40 segundos la primera vez del día.
+          </p>
         </div>
 
         <div v-else class="flex flex-wrap gap-2">
