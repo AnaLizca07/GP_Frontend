@@ -90,7 +90,7 @@ const kpiCards = computed(() => {
 
 // ─── Donut chart (project view) ───────────────────────────────────────────
 const donutLabels = ['Completadas', 'En Progreso', 'Pendientes', 'Bloqueadas']
-const donutColors = ['#22C55E', '#0070C0', '#94A3B8', '#EF4444']
+const donutColors = ['#34D399', '#60A5FA', '#94A3B8', '#F87171']
 const donutValues = computed(() =>
   projectKpis.value
     ? [
@@ -141,11 +141,11 @@ const taskStatusData = computed(() => {
   }
   const total = projectKpis.value.total_tasks
   return [
-    { label: 'Completadas', value: Math.round(projectKpis.value.completed_tasks / total * 100), color: '#22C55E' },
-    { label: 'En Progreso', value: Math.round(projectKpis.value.in_progress_tasks / total * 100), color: '#0070C0' },
+    { label: 'Completadas', value: Math.round(projectKpis.value.completed_tasks / total * 100), color: '#34D399' },
+    { label: 'En Progreso', value: Math.round(projectKpis.value.in_progress_tasks / total * 100), color: '#60A5FA' },
     { label: 'Pendientes', value: Math.round(projectKpis.value.pending_tasks / total * 100), color: '#94A3B8' },
     ...(projectKpis.value.blocked_tasks > 0
-      ? [{ label: 'Bloqueadas', value: Math.round(projectKpis.value.blocked_tasks / total * 100), color: '#EF4444' }]
+      ? [{ label: 'Bloqueadas', value: Math.round(projectKpis.value.blocked_tasks / total * 100), color: '#F87171' }]
       : []),
   ]
 })

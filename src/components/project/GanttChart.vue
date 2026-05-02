@@ -27,11 +27,11 @@ const HEADER_H = MONTH_H + DAY_H  // 44px total de cabeceras
 
 // ── Colores y etiquetas de estado ──────────────────────────
 const STATUS_COLOR: Record<string, string> = {
-  completed:   '#22C55E',
-  in_progress: '#0070C0',
-  review:      '#F59E0B',
+  completed:   '#34D399',
+  in_progress: '#60A5FA',
+  review:      '#FCD34D',
   pending:     '#94A3B8',
-  blocked:     '#EF4444',
+  blocked:     '#F87171',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -230,7 +230,7 @@ function onBarMouseLeave() {
           :x="dl.x"
           :y="MONTH_H + DAY_H - 5"
           text-anchor="middle"
-          :fill="dl.isMonday ? '#0070C0' : '#94A3B8'"
+          :fill="dl.isMonday ? '#60A5FA' : '#94A3B8'"
           :font-weight="dl.isMonday ? '700' : '400'"
           font-size="9"
         >{{ dl.label }}</text>

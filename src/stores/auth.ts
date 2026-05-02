@@ -85,16 +85,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
-    isLoading.value = true
-
-    try {
-      await authService.logout()
-    } catch (err: any) {
-      console.error('Error al cerrar sesión:', err)
-    } finally {
-      clearAuth()
-      isLoading.value = false
-    }
+    // Limpiar auth localmente de inmediato (no esperar al backend)
+    // así el logout funciona aunque el servidor esté en cold start
+    clearAuth()
+    authService.logout().catch(() => {}) // fire-and-forget
   }
 
   // In-flight deduplication: if a request is already pending, reuse it

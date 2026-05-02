@@ -4,7 +4,7 @@
  * causando un cold start de ~40s en la primera petición.
  */
 const BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const PING_INTERVAL_MS = 10 * 60 * 1000 // 10 minutos
+const PING_INTERVAL_MS = 13 * 60 * 1000 // 13 minutos (Render duerme a los 15)
 
 export function startKeepAlive(): void {
   // Solo en producción — en local no hace falta
