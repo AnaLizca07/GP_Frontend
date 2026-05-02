@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useSlowLoad } from '@/composables/useSlowLoad'
 import { useDashboard } from '@/composables/useDashboard'
 import { useNotificationsStore } from '@/stores/notifications'
 import projectsService from '@/services/projects'
@@ -21,6 +22,7 @@ const selectedProjectId = ref<number | null>(null)
 const tasks = ref<any[]>([])
 const loadingProjects = ref(true)
 const loadingTasks = ref(false)
+const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 const activeTab = ref<'tasks' | 'employees'>('tasks')
 
 // Budget
@@ -44,6 +46,7 @@ const loadingReceipts = ref(false)
 
 // ─── Load projects ────────────────────────────────────────────────────────
 onMounted(async () => {
+  startTimer()
   try {
     const res = await projectsService.getProjects()
     projects.value = res.projects ?? res ?? []
@@ -54,6 +57,7 @@ onMounted(async () => {
   } catch (err) {
     console.error('Error cargando proyectos:', err)
   } finally {
+    clearTimer()
     loadingProjects.value = false
   }
 })
@@ -217,6 +221,9 @@ function completionColor(rate: number): string {
         <div v-if="loadingProjects" class="space-y-3">
           <USkeleton class="h-10 w-48 rounded-lg" />
           <USkeleton class="h-32 rounded-xl" />
+          <p v-if="slowLoad" class="text-sm text-muted-foreground text-center">
+            El servidor está iniciando. En el plan gratuito de hosting puede tardar hasta 40 segundos la primera vez del día.
+          </p>
         </div>
 
         <!-- Sin proyectos -->

@@ -66,8 +66,15 @@
           <tbody class="bg-background divide-y divide-border">
             <tr v-if="loading">
               <td colspan="6" class="px-6 py-8 text-center text-muted-foreground">
-                <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
-                Cargando ingresos...
+                <div class="flex flex-col items-center gap-2">
+                  <div>
+                    <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
+                    Cargando ingresos...
+                  </div>
+                  <p v-if="slowLoad" class="text-xs text-muted-foreground">
+                    El servidor está despertando, puede tardar ~40s la primera vez...
+                  </p>
+                </div>
               </td>
             </tr>
             <tr v-else-if="transactions.length === 0">
@@ -301,6 +308,7 @@ const fetchProjects = async () => {
 // ─── Estado ────────────────────────────────────────────────────────────────
 const transactions = ref<Transaction[]>([])
 const loading = ref(false)
+const slowLoad = ref(false)
 const error = ref<string | null>(null)
 const deletingId = ref<number | null>(null)
 
@@ -312,14 +320,18 @@ const totalIncome = computed(() =>
 // ─── Carga ─────────────────────────────────────────────────────────────────
 const fetchTransactions = async () => {
   loading.value = true
+  slowLoad.value = false
   error.value = null
+  const slowTimer = setTimeout(() => { slowLoad.value = true }, 8000)
   try {
     transactions.value = await financeService.getTransactions('income')
   } catch (e: any) {
     error.value = 'Error al cargar ingresos'
     console.error(e)
   } finally {
+    clearTimeout(slowTimer)
     loading.value = false
+    slowLoad.value = false
   }
 }
 
