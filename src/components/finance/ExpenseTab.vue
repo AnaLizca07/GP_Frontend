@@ -67,8 +67,15 @@
           <tbody class="bg-background divide-y divide-border">
             <tr v-if="loading">
               <td colspan="6" class="px-6 py-8 text-center text-muted-foreground">
-                <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
-                Cargando egresos...
+                <div class="flex flex-col items-center gap-2">
+                  <div>
+                    <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
+                    Cargando egresos...
+                  </div>
+                  <p v-if="slowLoad" class="text-xs text-muted-foreground">
+                    El servidor está iniciando. En el plan gratuito de hosting puede tardar hasta 40 segundos la primera vez del día.
+                  </p>
+                </div>
               </td>
             </tr>
             <tr v-else-if="transactions.length === 0">
@@ -295,6 +302,7 @@ import { ref, computed, onMounted } from 'vue'
 import financeService, { type Transaction } from '@/services/finance'
 import projectsService from '@/services/projects'
 import { formatCOP } from '@/utils'
+import { useSlowLoad } from '@/composables/useSlowLoad'
 
 // ─── Balance actual ─────────────────────────────────────────────────────────
 const currentBalance = ref(0)
@@ -322,6 +330,7 @@ const fetchProjects = async () => {
 const transactions = ref<Transaction[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 const deletingId = ref<number | null>(null)
 
 const totalExpense = computed(() =>
@@ -332,12 +341,14 @@ const totalExpense = computed(() =>
 const fetchTransactions = async () => {
   loading.value = true
   error.value = null
+  startTimer()
   try {
     transactions.value = await financeService.getTransactions('expense')
   } catch (e: any) {
     error.value = 'Error al cargar egresos'
     console.error(e)
   } finally {
+    clearTimer()
     loading.value = false
   }
 }

@@ -81,6 +81,7 @@ const loadingProjects = ref(true)
 const tareas = ref<TareaKanban[]>([])
 const rawTasks = ref<Task[]>([])        // copia original para el modal de edición
 const loading = ref(false)
+const slowLoad = ref(false)
 const error = ref<string | null>(null)
 
 // ─── Entregables ──────────────────────────────
@@ -169,7 +170,9 @@ const kanbanColumns = computed(() => [
 // ─── Carga ────────────────────────────────────
 const fetchTareas = async () => {
   loading.value = true
+  slowLoad.value = false
   error.value = null
+  const slowTimer = setTimeout(() => { slowLoad.value = true }, 8000)
   try {
     const params = selectedProjectId.value ? { project_id: selectedProjectId.value } : undefined
     const response = await tasksService.getTasks(params)
@@ -189,7 +192,9 @@ const fetchTareas = async () => {
     error.value = 'Error al cargar tareas'
     console.error(e)
   } finally {
+    clearTimeout(slowTimer)
     loading.value = false
+    slowLoad.value = false
   }
 }
 
@@ -425,8 +430,11 @@ const handleDragEnd = () => {}
         </div>
 
         <!-- Loading -->
-        <div v-else-if="loading && tareas.length === 0" class="flex justify-center items-center h-64">
+        <div v-else-if="loading && tareas.length === 0" class="flex flex-col justify-center items-center h-64 gap-3">
           <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted-foreground" />
+          <p v-if="slowLoad" class="text-sm text-muted-foreground text-center">
+            El servidor está despertando, puede tardar ~40s la primera vez...
+          </p>
         </div>
 
         <div v-else>

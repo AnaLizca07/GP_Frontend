@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSlowLoad } from '@/composables/useSlowLoad'
 import { useDashboard } from '@/composables/useDashboard'
 import { useNotificationsStore } from '@/stores/notifications'
 import api from '@/services/api'
@@ -21,6 +22,7 @@ const notificationsStore = useNotificationsStore()
 // ─── State ──────────────────────────────────────────────────────────────
 const tasks = ref<Task[]>([])
 const loading = ref(true)
+const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 const showCompleteModal = ref(false)
 const selectedTask = ref<Task | null>(null)
 const performance = ref<EmployeePerformance | null>(null)
@@ -30,6 +32,7 @@ const loadingOkrs = ref(false)
 
 // ─── Load data ───────────────────────────────────────────────────────────
 onMounted(async () => {
+  startTimer()
   loadingOkrs.value = true
   try {
     // Tasks, profile and OKRs all start in parallel
@@ -50,6 +53,7 @@ onMounted(async () => {
     loadingOkrs.value = false
   } finally {
     // Show main content as soon as tasks + profile are ready
+    clearTimer()
     loading.value = false
   }
 
@@ -200,8 +204,13 @@ const onTaskCompleted = () => {
         </div>
 
         <!-- KPIs -->
-        <div v-if="loading" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <USkeleton v-for="i in 4" :key="i" class="h-24 rounded-xl" />
+        <div v-if="loading" class="space-y-3">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <USkeleton v-for="i in 4" :key="i" class="h-24 rounded-xl" />
+          </div>
+          <p v-if="slowLoad" class="text-sm text-muted-foreground text-center">
+            El servidor está iniciando. En el plan gratuito de hosting puede tardar hasta 40 segundos la primera vez del día.
+          </p>
         </div>
         <div v-else class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <UCard class="p-5">

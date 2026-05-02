@@ -23,6 +23,7 @@ const emit = defineEmits<{
 
 // ─── Estado ──────────────────────────────────
 const saving = ref(false)
+const savingMessage = ref('Guardando...')
 const projects = ref<Project[]>([])
 const employees = ref<any[]>([])
 const loadingOptions = ref(false)
@@ -116,6 +117,10 @@ const handleSubmit = async () => {
   touched.employee_id = true
   if (!isFormValid.value) return
   saving.value = true
+  savingMessage.value = 'Guardando...'
+  const slowTimer = setTimeout(() => {
+    if (saving.value) savingMessage.value = 'El servidor está despertando (~40s)...'
+  }, 8000)
   try {
     const payload: TaskCreate = {
       project_id: Number(form.value.project_id),
@@ -138,7 +143,9 @@ const handleSubmit = async () => {
   } catch (e) {
     console.error('Error guardando tarea:', e)
   } finally {
+    clearTimeout(slowTimer)
     saving.value = false
+    savingMessage.value = 'Guardando...'
   }
 }
 
@@ -284,7 +291,7 @@ const statusLabel: Record<string, string> = {
               :disabled="saving"
               class="flex-1 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
             >
-              {{ saving ? 'Guardando...' : task ? 'Actualizar' : 'Crear Tarea' }}
+              {{ saving ? savingMessage : task ? 'Actualizar' : 'Crear Tarea' }}
             </button>
           </div>
         </div>
