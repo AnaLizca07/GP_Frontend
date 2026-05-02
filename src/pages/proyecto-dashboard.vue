@@ -68,7 +68,7 @@ const statusColor: Record<string, string> = {
 
 // Donut chart data: task status breakdown
 const taskDonutLabels = ['Completadas', 'En Progreso', 'Pendientes', 'Bloqueadas']
-const taskDonutColors = ['#22C55E', '#0070C0', '#94A3B8', '#EF4444']
+const taskDonutColors = ['#34D399', '#60A5FA', '#94A3B8', '#F87171']
 const taskDonutValues = computed(() =>
   kpis.value
     ? [
@@ -86,12 +86,12 @@ const teamBarDatasets = computed(() => [
   {
     label: 'Tareas completadas',
     data: empPerf.value?.members.map(m => m.completed_tasks) ?? [],
-    color: '#22C55E',
+    color: '#34D399',
   },
   {
     label: 'En progreso',
     data: empPerf.value?.members.map(m => m.in_progress_tasks) ?? [],
-    color: '#0070C0',
+    color: '#60A5FA',
   },
   {
     label: 'Pendientes',

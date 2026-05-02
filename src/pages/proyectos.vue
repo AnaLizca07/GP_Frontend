@@ -13,6 +13,7 @@ const router = useRouter()
 const proyectos = ref<Project[]>([])
 const sponsors = ref<Sponsor[]>([])
 const loading = ref(false)
+const slowLoad = ref(false)
 const error = ref<string | null>(null)
 const showModal = ref(false)
 const isEditMode = ref(false)
@@ -53,7 +54,9 @@ const formatDate = (dateStr?: string) =>
 
 const fetchProyectos = async () => {
   loading.value = true
+  slowLoad.value = false
   error.value = null
+  const slowTimer = setTimeout(() => { slowLoad.value = true }, 8000)
   try {
     const response = await projectsService.getProjects({ limit: 100 })
     proyectos.value = response.projects
@@ -61,7 +64,9 @@ const fetchProyectos = async () => {
     error.value = 'Error al cargar proyectos'
     console.error(e)
   } finally {
+    clearTimeout(slowTimer)
     loading.value = false
+    slowLoad.value = false
   }
 }
 
@@ -247,8 +252,11 @@ const getMenuItems = (p: Project) => [[
         </select>
       </div>
 
-      <div v-if="loading && proyectos.length === 0" class="flex justify-center items-center h-64">
+      <div v-if="loading && proyectos.length === 0" class="flex flex-col justify-center items-center h-64 gap-3">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted-foreground" />
+        <p v-if="slowLoad" class="text-sm text-muted-foreground text-center">
+          El servidor está despertando, puede tardar ~40s la primera vez...
+        </p>
       </div>
 
       <div v-else-if="error" class="text-center py-12">
