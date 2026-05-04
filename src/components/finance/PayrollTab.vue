@@ -281,6 +281,7 @@
                 </label>
                 <!-- Tipo de contrato (solo visible si está seleccionado) -->
                 <div v-if="isSelected(emp.id)" class="flex gap-1 shrink-0">
+                  <!-- Botón Empleado oculto temporalmente — descomentar para reactivar
                   <button
                     type="button"
                     @click="setEmployeeType(emp.id, 'employee')"
@@ -291,6 +292,7 @@
                         : 'bg-slate-700 text-slate-400 hover:bg-slate-600'
                     ]"
                   >Empleado</button>
+                  -->
                   <button
                     type="button"
                     @click="setEmployeeType(emp.id, 'contractor')"
@@ -677,14 +679,14 @@ const isStep1Valid = computed(() =>
 // ─── Helpers selección de empleados ────────────────────────────────────────
 const isSelected = (empId: number) => processForm.value.selectedEmployees.some(e => e.id === empId)
 const getEmployeeType = (empId: number): 'employee' | 'contractor' => {
-  return processForm.value.selectedEmployees.find(e => e.id === empId)?.type ?? 'employee'
+  return processForm.value.selectedEmployees.find(e => e.id === empId)?.type ?? 'contractor'
 }
 const toggleEmployee = (empId: number) => {
   const idx = processForm.value.selectedEmployees.findIndex(e => e.id === empId)
   if (idx >= 0) {
     processForm.value.selectedEmployees.splice(idx, 1)
   } else {
-    processForm.value.selectedEmployees.push({ id: empId, type: 'employee' })
+    processForm.value.selectedEmployees.push({ id: empId, type: 'contractor' })
   }
 }
 const setEmployeeType = (empId: number, type: 'employee' | 'contractor') => {
