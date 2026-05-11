@@ -97,6 +97,11 @@ export const employeeService = {
     return data
   },
 
+  async reactivateEmployee(id: number): Promise<Employee> {
+    const { data } = await api.put(`/api/employees/${id}/reactivate`)
+    return data
+  },
+
   async uploadResume(id: number, file: File): Promise<{
     message: string
     file_url: string

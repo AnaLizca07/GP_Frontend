@@ -20,6 +20,9 @@ const { employees, loading, fetchEmployees, createEmployee } = useEmployees()
 const { slowLoad, startTimer, clearTimer } = useSlowLoad()
 
 const miembros = ref<MiembroEquipo[]>([])
+const inactivos = ref<MiembroEquipo[]>([])
+const showInactivos = ref(false)
+const reactivatingId = ref<number | null>(null)
 const showAddMemberModal = ref(false)
 const showProfileModal = ref(false)
 const showEditModal = ref(false)
@@ -104,12 +107,22 @@ const loadColleagues = async (): Promise<MiembroEquipo[]> => {
   return list
 }
 
+const loadInactivos = async () => {
+  try {
+    const res = await employeeService.getEmployees({ status_filter: 'inactive' })
+    inactivos.value = (res.employees || []).map(convertToMiembro)
+  } catch (e) {
+    console.error('Error cargando inactivos:', e)
+  }
+}
+
 onMounted(async () => {
   startTimer()
   try {
     if (isManager.value) {
       await fetchEmployees({ status_filter: 'active' })
       miembros.value = employees.value.map(convertToMiembro)
+      await loadInactivos()
     } else {
       miembros.value = await loadColleagues()
     }
@@ -153,14 +166,32 @@ const handleUpdateMember = async (id: number, data: UpdateEmployeeData) => {
 }
 
 const handleDeactivateMember = async (miembro: MiembroEquipo) => {
-  if (!confirm(`¿Desactivar a ${miembro.nombre}? Dejará de aparecer en el equipo activo.`)) return
+  if (!confirm(`¿Desactivar a ${miembro.nombre}? Podrás reactivarlo desde la sección de inactivos.`)) return
   try {
     await employeeService.deactivateEmployee(miembro.id)
     miembros.value = miembros.value.filter(m => m.id !== miembro.id)
     if (selectedMember.value?.id === miembro.id) showProfileModal.value = false
+    await loadInactivos()
+    toast.add({ title: `${miembro.nombre} desactivado`, color: 'warning', icon: 'i-lucide-user-x' })
   } catch (error) {
     console.error('Error desactivando miembro:', error)
-    alert('No se pudo desactivar el miembro. Intenta de nuevo.')
+    toast.add({ title: 'No se pudo desactivar el miembro', color: 'error', icon: 'i-lucide-alert-circle' })
+  }
+}
+
+const handleReactivateMember = async (miembro: MiembroEquipo) => {
+  if (!confirm(`¿Reactivar a ${miembro.nombre}?`)) return
+  reactivatingId.value = miembro.id
+  try {
+    const updated = await employeeService.reactivateEmployee(miembro.id)
+    inactivos.value = inactivos.value.filter(m => m.id !== miembro.id)
+    miembros.value.push(convertToMiembro(updated))
+    toast.add({ title: `${miembro.nombre} reactivado`, color: 'success', icon: 'i-lucide-user-check' })
+  } catch (error) {
+    console.error('Error reactivando miembro:', error)
+    toast.add({ title: 'No se pudo reactivar el miembro', color: 'error', icon: 'i-lucide-alert-circle' })
+  } finally {
+    reactivatingId.value = null
   }
 }
 
@@ -257,7 +288,7 @@ const handleAddMember = async (form: NewMemberForm) => {
           <UButton v-if="isManager" label="Agregar Miembro" icon="i-lucide-plus" @click="showAddMemberModal = true" />
         </div>
 
-        <!-- Grid -->
+        <!-- Grid activos -->
         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <TeamMemberCard
             v-for="miembro in filteredMiembros"
@@ -270,6 +301,48 @@ const handleAddMember = async (form: NewMemberForm) => {
             @deactivate-member="handleDeactivateMember"
             @save-rating="handleSaveRating"
           />
+        </div>
+
+        <!-- Sección de inactivos (solo managers) -->
+        <div v-if="isManager && inactivos.length > 0" class="mt-10">
+          <UButton
+            variant="ghost"
+            color="neutral"
+            :icon="showInactivos ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+            trailing
+            @click="showInactivos = !showInactivos"
+            class="mb-4"
+          >
+            Miembros inactivos ({{ inactivos.length }})
+          </UButton>
+
+          <div v-if="showInactivos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+              v-for="miembro in inactivos"
+              :key="miembro.id"
+              class="rounded-xl border border-dashed border-muted p-4 flex items-center justify-between gap-4 opacity-60"
+            >
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground">
+                  {{ miembro.iniciales }}
+                </div>
+                <div>
+                  <p class="font-medium text-sm">{{ miembro.nombre }}</p>
+                  <p class="text-xs text-muted-foreground">{{ miembro.rol || 'Sin cargo' }}</p>
+                </div>
+              </div>
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-user-check"
+                :loading="reactivatingId === miembro.id"
+                @click="handleReactivateMember(miembro)"
+              >
+                Reactivar
+              </UButton>
+            </div>
+          </div>
         </div>
       </template>
     </template>
